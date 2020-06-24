@@ -22,7 +22,8 @@ class WindowClass(QMainWindow, form_class):
         self.setupUi(self)
 
         #menu bar
-        self.action_import_json.triggered.connect(self.import_json)
+        self.action_import_device.triggered.connect(self.import_device)
+        self.action_import_command.triggered.connect(self.import_command)
         self.action_export_json.triggered.connect(self.export_json)
 
         #main window
@@ -32,6 +33,8 @@ class WindowClass(QMainWindow, form_class):
         self.btn_up.clicked.connect(self.click_item_up)
         self.btn_down.clicked.connect(self.click_item_down)
         self.listView_command.setDragDropMode(QAbstractItemView.InternalMove)
+        self.listView_command.setDefaultDropAction(QtCore.Qt.CopyAction)
+        self.listView_command.setSpacing(5)
 
         #single command tab
         self.cbo_input_onoff.currentIndexChanged.connect(self.select_onoff_input_style)
@@ -49,7 +52,9 @@ class WindowClass(QMainWindow, form_class):
         item = self.listView_command.selectedIndexes()
         if item: #item != []
             row = item[0].row()
-            print(item, "up", row)
+            column = item[0].column()
+            print(item, "up", row, column)
+            # command_model.beginMoveColumns(self, item[0].first(),item[0].last(), command_model.itemFromIndex(self, row-1),column)
 
     def click_item_down(self):
         item = self.listView_command.selectedIndexes()
@@ -57,14 +62,24 @@ class WindowClass(QMainWindow, form_class):
             row = item[0].row()
             print(item, "down", row)
 
-    def import_json(self):
-        print("import")
+    def import_command(self):
+        print("import command")
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
-            f = open(file_name[0], 'r')
-            with f:
-                data = f.read()
-                print(data)
+            with open(file_name[0]) as json_file:
+                json_data = json.load(json_file)
+                print(json_data)
+
+    def import_device(self):
+        print("import device")
+        file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
+        if file_name[0]:
+            with open(file_name[0]) as json_file:
+                json_data = json.load(json_file)
+                self.lineEdit_device_name.setText(json_data["name"])
+                self.lineEdit_device_uuid.setText(json_data["uuid"])
+                self.lineEdit_device_addr.setText(json_data["eui64"])
+                self.lineEdit_device_ep.setText(json_data["ep"])
 
     def export_json(self):
         print("export")
