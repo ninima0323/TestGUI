@@ -1,12 +1,11 @@
 import random
-import json
-from collections import OrderedDict
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtGui import QStandardItem
 from PyQt5 import QtCore
+from command_parser import *
 
 #UI파일 연결 - UI파일은 Python 코드 파일과 같은 디렉토리에 위치
 form_class = uic.loadUiType("mainwindow_tab.ui")[0]
@@ -24,7 +23,8 @@ class WindowClass(QMainWindow, form_class):
         #menu bar
         self.action_import_device.triggered.connect(self.import_device)
         self.action_import_command.triggered.connect(self.import_command)
-        self.action_export_json.triggered.connect(self.export_json)
+        self.action_export_device.triggered.connect(self.export_device)
+        self.action_export_command.triggered.connect(self.export_command)
 
         #main window
         self.btn_more.clicked.connect(self.click_more)
@@ -32,6 +32,8 @@ class WindowClass(QMainWindow, form_class):
 
         self.btn_up.clicked.connect(self.click_item_up)
         self.btn_down.clicked.connect(self.click_item_down)
+        self.btn_up.hide()
+        self.btn_down.hide()
         self.listView_command.setDragDropMode(QAbstractItemView.InternalMove)
         self.listView_command.setDefaultDropAction(QtCore.Qt.CopyAction)
         self.listView_command.setSpacing(5)
@@ -66,9 +68,7 @@ class WindowClass(QMainWindow, form_class):
         print("import command")
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
-            with open(file_name[0]) as json_file:
-                json_data = json.load(json_file)
-                print(json_data)
+            read_command_from_json(file_name[0])
 
     def import_device(self):
         print("import device")
@@ -81,8 +81,8 @@ class WindowClass(QMainWindow, form_class):
                 self.lineEdit_device_addr.setText(json_data["eui64"])
                 self.lineEdit_device_ep.setText(json_data["ep"])
 
-    def export_json(self):
-        print("export")
+    def export_device(self):
+        print("export device")
         name = self.lineEdit_device_name.text()
         uuid = self.lineEdit_device_uuid.text()
         addr = self.lineEdit_device_addr.text()
@@ -98,15 +98,16 @@ class WindowClass(QMainWindow, form_class):
         else:
             print("device info not exist")
             QMessageBox.about(self, "fail making json", "장치 정보가 입력되지 않았습니다.")
+
+    def export_command(self):
+        print("\nexport command")
         count = command_model.rowCount()
         if count != 0:
-            # file_data = OrderedDict()
+            list = []
             for index in range(command_model.rowCount()):
                 item = command_model.item(index).text()
-                print(item)
-            # print(json.dumps(file_data, ensure_ascii=False, indent="\t"))
-            # with open('command.json', 'w', encoding='utf-8') as make_file:
-            #     json.dump(file_data, make_file, ensure_ascii=False, indent="\t")
+                list.append(item)
+            make_command(list)
         else:
             print("command not exist")
             QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
@@ -114,7 +115,6 @@ class WindowClass(QMainWindow, form_class):
     def add_command(self, command_string):
         command_model.appendRow(QStandardItem(command_string))
         self.listView_command.setModel(command_model)
-        print(command_string)
 
     def select_onoff_input_style(self):
         index = self.cbo_input_onoff.currentIndex()

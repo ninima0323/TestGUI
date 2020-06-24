@@ -1054,17 +1054,19 @@
      <addaction name="action_import_device"/>
      <addaction name="action_import_command"/>
     </widget>
+    <widget class="QMenu" name="menuexport_json">
+     <property name="title">
+      <string>export json</string>
+     </property>
+     <addaction name="action_export_device"/>
+     <addaction name="action_export_command"/>
+    </widget>
     <addaction name="menuImport_json"/>
-    <addaction name="action_export_json"/>
+    <addaction name="menuexport_json"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="action_export_json">
-   <property name="text">
-    <string>export json</string>
-   </property>
-  </action>
   <action name="action_import_device">
    <property name="text">
     <string>import device</string>
@@ -1073,6 +1075,16 @@
   <action name="action_import_command">
    <property name="text">
     <string>import command</string>
+   </property>
+  </action>
+  <action name="action_export_device">
+   <property name="text">
+    <string>export device</string>
+   </property>
+  </action>
+  <action name="action_export_command">
+   <property name="text">
+    <string>export command</string>
    </property>
   </action>
  </widget>
