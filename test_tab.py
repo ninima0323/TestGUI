@@ -51,6 +51,8 @@ class MainWindow(QMainWindow, form_class):
         self.listView_result.setSpacing(5)
 
         self.listView_command.setModel(command_model)
+        self.listView_process.setModel(process_model)
+        self.listView_result.setModel(result_model)
 
         # single command tab
         self.cbo_input_onoff.currentIndexChanged.connect(self.select_onoff_input_style)
@@ -81,12 +83,19 @@ class MainWindow(QMainWindow, form_class):
     def click_clear_command(self):
         print("clear command")
         command_model.clear()
+        process_model.clear()
+        result_model.clear()
 
     def import_command(self):
         print("import command")
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
-            read_command_from_json(file_name[0])
+            input_command = read_command_from_json(file_name[0], self.cbo_module.currentIndex())
+            command_model.clear()
+            process_model.clear()
+            result_model.clear()
+            for command in input_command:
+                self.add_command(command)
 
     def import_device(self):
         print("import device")
@@ -130,7 +139,7 @@ class MainWindow(QMainWindow, form_class):
             print("command not exist")
             QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
 
-    def add_command(self, command_string, count):
+    def add_command(self, command_string, count=1):
         for i in range(count):
             command_model.appendRow(QStandardItem(command_string))
 
@@ -223,7 +232,7 @@ class MainWindow(QMainWindow, form_class):
             command_type = self.tab_single.currentIndex()
             if command_type == 0:  # connect
                 item = "connect"
-                self.add_command(item, 1)
+                self.add_command(item)
             elif command_type == 1:  # on/off
                 onoff_input_type = self.cbo_input_onoff.currentIndex()
                 onoff_count = self.spinBox_onoff.value()
@@ -240,79 +249,70 @@ class MainWindow(QMainWindow, form_class):
                     else:
                         print("insert nothing")
                 elif onoff_input_type == 1:  # regular random
-                    # temp = random.randint(0x00, 0x01)
-                    # item = "on/off, " + hex(temp)
-                    item = "on/off, regular random"
-                    self.add_command(item, onoff_count)
+                    for i in range(onoff_count):
+                        item = "on/off, regular random, " + str(random.randint(0x00, 0x01))
+                        self.add_command(item)
                 elif onoff_input_type == 2:  # irregular random
-                    # temp = random.randint(0x00, 0x01)
-                    # item = "on/off, " + hex(temp)
-                    item = "on/off, irregular random"
-                    self.add_command(item, onoff_count)
+                    for i in range(onoff_count):
+                        item = "on/off, irregular random, " + str(random.randint(0x00, 0x01))
+                        self.add_command(item)
                 else:  # random
-                    # temp = random.randint(0x00, 0x01)
-                    # item = "on/off, " + hex(temp)
-                    item = "on/off, random"
-                    self.add_command(item, onoff_count)
+                    for i in range(onoff_count):
+                        item = "on/off, random, " + str(random.randint(0x00, 0x01))
+                        self.add_command(item)
             elif command_type == 2:  # color
                 color_input_type = self.cbo_input_color.currentIndex()
                 color_count = self.spinBox_color.value()
                 if color_input_type == 0:  # self input
                     temp = self.lineEdit_color.text()
                     if "0x" in temp:
-                        item = "color, " + int(temp)
+                        item = "color, " + str(int(temp,0))
                         self.add_command(item, color_count)
                     elif temp.isdigit and temp != "":
-                        # temp = int(temp)
                         item = "color, " + temp
                         self.add_command(item, color_count)
                 elif color_input_type == 1:  # regular random
-                    # temp = random.randint(200, 370)
-                    # item = "color, " + hex(temp)
-                    item = "color, regular random"
-                    self.add_command(item, color_count)
+                    for i in range(color_count):
+                        item = "color, regular random, " + str(random.randint(200, 370))
+                        self.add_command(item)
                 elif color_input_type == 2:  # irregular random
-                    # temp = random.randint(0x0000, 0xfeff) + 0xff00
-                    # item = "color, " + hex(temp)
-                    item = "color, irregular random"
-                    self.add_command(item, color_count)
+                    for i in range(color_count):
+                        item = "color, irregular random, " + str(random.randint(0x0000, 0xfeff) + 0xff00)
+                        self.add_command(item)
                 else:  # random
-                    # temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                    #                                                                                  0xfeff) + 0xff00
-                    # item = "color, " + hex(temp)
-                    item = "color, random"
-                    self.add_command(item, color_count)
+                    for i in range(color_count):
+                        temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
+                                                                                                     0xfeff) + 0xff00
+                        item = "color, random, " + str(temp)
+                        self.add_command(item)
             elif command_type == 3:  # level
                 level_input_type = self.cbo_input_color.currentIndex()
                 level_count = self.spinBox_level.value()
                 if level_input_type == 0:  # self input
                     temp = self.lineEdit_level.text()
                     if "0x" in temp:
-                        item = "level, " + int(temp)
+                        item = "level, " + str(int(temp,0))
                         self.add_command(item, level_count)
                     elif temp.isdigit and temp != "":
-                        # temp = int(temp)
                         item = "level, " + temp
                         self.add_command(item, level_count)
                 elif level_input_type == 1:  # regular random
-                    # temp = random.randint(0x00, 0xfe)
-                    # item = "level, " + hex(temp)
-                    item = "level, regular random"
-                    self.add_command(item, level_count)
+                    for i in range(level_count):
+                        item = "level, regular random, " + str(random.randint(0x00, 0xfe))
+                        self.add_command(item)
                 elif level_input_type == 2:  # irregular random
-                    # temp = random.randint(0x00, 0xfe) + 0xff
-                    # item = "level, " + hex(temp)
-                    item = "level, irregular random"
-                    self.add_command(item, level_count)
+                    for i in range(level_count):
+                        item = "level, irregular random, " + str(random.randint(0x00, 0xfe) + 0xff)
+                        self.add_command(item)
                 else:
-                    # temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                    #                                                                                    0xfe) + 0xff
-                    # item = "level, " + hex(temp)
-                    item = "level, random"
-                    self.add_command(item, level_count)
+                    for i in range(level_count):
+                        temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
+                                                                                                       0xfe) + 0xff
+                        item = "level, random, " + str(temp)
+                        self.add_command(item)
             else:  # disconnect
                 item = "disconnect"
-                self.add_command(item, 1)
+                self.add_command(item)
         # elif type == 1: #Zigbee 3.0
         # elif type == 2: #BLE
         # else: #UART
@@ -327,6 +327,9 @@ class MainWindow(QMainWindow, form_class):
             item_onoff = ""
             item_color = ""
             item_level = ""
+            onoff_items = []
+            color_items = []
+            level_items = []
 
             onoff_input_type = self.cbo_input_onoff_routine.currentIndex()
             onoff_routine_count = self.spinBox_onoff_routine.value()
@@ -341,19 +344,17 @@ class MainWindow(QMainWindow, form_class):
                     else:
                         print("insert nothing")
                 elif onoff_input_type == 1:  # regular random
-                    # temp = random.randint(0x00, 0x01)
-                    # item_onoff = "on/off, " + hex(temp)
-                    item_onoff = "on/off, regular random"
+                    for i in range(onoff_routine_count):
+                        item_onoff = "on/off, regular random, " + str(random.randint(0x00, 0x01))
+                        onoff_items.append(item_onoff)
                 elif onoff_input_type == 2:  # irregular random
-                    # temp = random.randint(0x00, 0x01)
-                    # item_onoff = "on/off, " + hex(temp)
-                    item_onoff = "on/off, irregular random"
+                    for i in range(onoff_routine_count):
+                        item_onoff = "on/off, irregular random, " + str(random.randint(0x00, 0x01))
+                        onoff_items.append(item_onoff)
                 else:  # random
-                    # temp = random.randint(0x00, 0x01)
-                    # item_onoff = "on/off, " + hex(temp)
-                    item_onoff = "on/off, random"
-            else:
-                print("no onoff")
+                    for i in range(onoff_routine_count):
+                        item_onoff = "on/off, random, " + str(random.randint(0x00, 0x01))
+                        onoff_items.append(item_onoff)
 
             color_input_type = self.cbo_input_color_routine.currentIndex()
             color_routine_count = self.spinBox_color_routine.value()
@@ -361,25 +362,23 @@ class MainWindow(QMainWindow, form_class):
                 if color_input_type == 0:  # self input
                     temp = self.lineEdit_color_routine.text()
                     if "0x" in temp:
-                        item_color = "color, " + int(temp)
+                        item_color = "color, " + str(int(temp,0))
                     elif temp.isdigit and temp != "":
-                        # temp = int(temp)
                         item_color = "color, " + temp
                 elif color_input_type == 1:  # regular random
-                    # temp = random.randint(200, 370)
-                    # item_color = "color, " + hex(temp)
-                    item_color = "color, regular random"
+                    for i in range(color_routine_count):
+                        item_color = "color, regular random, " + str(random.randint(200, 370))
+                        color_items.append(item_color)
                 elif color_input_type == 2:  # irregular random
-                    # temp = random.randint(0x0000, 0xfeff) + 0xff00
-                    # item_color = "color, " + hex(temp)
-                    item_color = "color, irregular random"
+                    for i in range(color_routine_count):
+                        item_color = "color, irregular random, " + str(random.randint(0x0000, 0xfeff) + 0xff00)
+                        color_items.append(item_color)
                 else:
-                    # temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                    #                                                                                  0xfeff) + 0xff00
-                    # item_color = "color, " + hex(temp)
-                    item_color = "color, random"
-            else:
-                print("no color")
+                    for i in range(color_routine_count):
+                        temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
+                                                                                                     0xfeff) + 0xff00
+                        item_color = "color, random, " + str(temp)
+                        color_items.append(item_color)
 
             level_input_type = self.cbo_input_color_routine.currentIndex()
             level_routine_count = self.spinBox_level_routine.value()
@@ -387,72 +386,141 @@ class MainWindow(QMainWindow, form_class):
                 if level_input_type == 0:  # self input
                     temp = self.lineEdit_level_routine.text()
                     if "0x" in temp:
-                        item_level = "level, " + int(temp)
+                        item_level = "level, " + str(int(temp,0))
                     elif temp.isdigit and temp != "":
-                        # temp = int(temp)
                         item_level = "level, " + temp
                 elif level_input_type == 1:  # regular random
-                    # temp = random.randint(0x00, 0xfe)
-                    # item_level = "level, " + hex(temp)
-                    item_level = "level, regular random"
+                    for i in range(level_routine_count):
+                        item_level = "level, regular random, " + str(random.randint(0x00, 0xfe))
+                        level_items.append(item_level)
                 elif level_input_type == 2:  # irregular random
-                    # temp = random.randint(0x00, 0xfe) + 0xff
-                    # item_level = "level, " + hex(temp)
-                    item_level = "level, irregular random"
+                    for i in range(level_routine_count):
+                        item_level = "level, irregular random, " + str(random.randint(0x00, 0xfe) + 0xff)
+                        level_items.append(item_level)
                 else:
-                    # temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                    #                                                                                    0xfe) + 0xff
-                    # item_level = "level, " + hex(temp)
-                    item_level = "level, random"
-            else:
-                print("no level")
+                    for i in range(level_routine_count):
+                        temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
+                                                                                                       0xfe) + 0xff
+                        item_level = "level, random, " + str(temp)
+                        level_items.append(item_level)
 
-            print(item_color, item_level)
             for i in range(self.spinBox_routine.value()):
-                self.add_command(item_connect, 1)
+                self.add_command(item_connect)
                 if order == 0:  # connect-onoff-color-level-disconnect
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                 elif order == 1:  # connect-onoff-level-color-disconnect
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                 elif order == 2:  # connect-color-onoff-level-disconnect
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                 elif order == 3:  # connect-level-onoff-color-disconnect
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                 elif order == 4:  # connect-color-level-onoff-disconnect
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
                 else:  # connect-level-color-onoff-disconnect
                     if item_level != "":
-                        self.add_command(item_level, level_routine_count)
+                        if level_items:
+                            for item in level_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_level, level_routine_count)
                     if item_color != "":
-                        self.add_command(item_color, color_routine_count)
+                        if color_items:
+                            for item in color_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_color, color_routine_count)
                     if item_onoff != "":
-                        self.add_command(item_onoff, onoff_routine_count)
-                self.add_command(item_disconnect, 1)
+                        if onoff_items:
+                            for item in onoff_items:
+                                self.add_command(item)
+                        else:
+                            self.add_command(item_onoff, onoff_routine_count)
+                self.add_command(item_disconnect)
 
         # elif module_type == 1: #Zigbee 3.0
         # elif module_type == 2: #BLE
@@ -481,7 +549,19 @@ class MainWindow(QMainWindow, form_class):
                     i = QStandardItem(item + ",error")
                     i.setBackground(QColor('#f0027f'))
                     process_model.appendRow(i)
-        self.listView_process.setModel(process_model)
+            self.show_result()
+
+    def show_result(self):
+        for index in range(process_model.rowCount()):
+            item = process_model.item(index).text()
+            result = re.split(",", item)
+            i = QStandardItem(item)
+            if result[-1] == "ok":
+                i.setBackground(QColor('#7fc97f'))
+                result_model.appendRow(i)
+            else:
+                i.setBackground(QColor('#f0027f'))
+                result_model.appendRow(i)
 
 
 class ResultWindow(QMainWindow):

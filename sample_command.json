@@ -1,11 +1,17 @@
 {
 	"commands": [
 		{
+			"cluster": "0x0006",
+			"command": 0,
+			"payloads": null,
+			"duration": 0.5
+		},
+		{
 			"cluster": "0x0300",
 			"command": "0x0a",
 			"payloads": [
 				[
-					238,
+					233,
 					"0x21"
 				],
 				[
@@ -19,7 +25,7 @@
 			"command": "0x0a",
 			"payloads": [
 				[
-					236,
+					366,
 					"0x21"
 				],
 				[
@@ -33,7 +39,7 @@
 			"command": "0x04",
 			"payloads": [
 				[
-					347,
+					132,
 					"0x20"
 				],
 				[
@@ -47,7 +53,21 @@
 			"command": "0x04",
 			"payloads": [
 				[
-					216,
+					150,
+					"0x20"
+				],
+				[
+					0,
+					"0x21"
+				]
+			]
+		},
+		{
+			"cluster": "0x0008",
+			"command": "0x04",
+			"payloads": [
+				[
+					214,
 					"0x20"
 				],
 				[
