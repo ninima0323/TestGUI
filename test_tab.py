@@ -1,4 +1,3 @@
-import random
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -93,11 +92,15 @@ class MainWindow(QMainWindow, form_class):
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
             input_command = read_command_from_json(file_name[0], self.cbo_module.currentIndex())
-            command_model.clear()
-            process_model.clear()
-            result_model.clear()
-            for command in input_command:
-                self.add_command(command)
+            if input_command != []:
+                command_model.clear()
+                process_model.clear()
+                result_model.clear()
+                for command in input_command:
+                    self.add_command(command)
+            else:
+                print("not a command file")
+                QMessageBox.about(self, "not a command file", "명령 파일이 아닙니다.")
 
     def import_device(self):
         print("import device")
@@ -105,10 +108,14 @@ class MainWindow(QMainWindow, form_class):
         if file_name[0]:
             with open(file_name[0]) as json_file:
                 json_data = json.load(json_file)
-                self.lineEdit_device_name.setText(json_data["name"])
-                self.lineEdit_device_uuid.setText(json_data["uuid"])
-                self.lineEdit_device_addr.setText(json_data["eui64"])
-                self.lineEdit_device_ep.setText(json_data["ep"])
+                if "uuid" in json_data:
+                    self.lineEdit_device_name.setText(json_data["name"])
+                    self.lineEdit_device_uuid.setText(json_data["uuid"])
+                    self.lineEdit_device_addr.setText(json_data["eui64"])
+                    self.lineEdit_device_ep.setText(json_data["ep"])
+                else:
+                    print("not a device file")
+                    QMessageBox.about(self, "not a device file", "장치 파일이 아닙니다.")
 
     def export_device(self):
         print("export device")
@@ -375,11 +382,6 @@ class MainWindow(QMainWindow, form_class):
             color_routine_count = self.spinBox_color_routine.value()
             if color_routine_count != 0:
                 if color_input_type == 0:  # self input
-                    # temp = self.lineEdit_color_routine.text()
-                    # if "0x" in temp:
-                    #     item_color = "color, " + str(int(temp,0))
-                    # elif temp.isdigit and temp != "":
-                    #     item_color = "color, " + temp
                     temp = self.cbo_routine_color_value.currentText()
                     item_color = "color, " + temp
                 elif color_input_type == 1:  # regular random
@@ -401,11 +403,6 @@ class MainWindow(QMainWindow, form_class):
             level_routine_count = self.spinBox_level_routine.value()
             if level_routine_count != 0:
                 if level_input_type == 0:  # self input
-                    # temp = self.lineEdit_level_routine.text()
-                    # if "0x" in temp:
-                    #     item_level = "level, " + str(int(temp,0))
-                    # elif temp.isdigit and temp != "":
-                    #     item_level = "level, " + temp
                     temp = self.cbo_routine_level_value.currentText()
                     item_level = "level, " + temp
                 elif level_input_type == 1:  # regular random

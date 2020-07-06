@@ -1,6 +1,5 @@
 import json
 from collections import OrderedDict
-import random
 
 
 def read_command_from_json(file_name, module_index):
@@ -16,7 +15,6 @@ def read_command_from_json(file_name, module_index):
                         list.append("on/off, " + command_type[0].split(".")[0])
                     else:
                         list.append(command_type[0] + ", " + command_type[-1].split(".")[0])
-                return list
             elif "commands" in json_data: #single command 의 경우
                 for item in json_data["commands"]:
                     cluster = item["cluster"]
@@ -30,7 +28,8 @@ def read_command_from_json(file_name, module_index):
                     elif cluster == "0x0008":
                         command_string = "level, " + str(payloads[0][0])
                     list.append(command_string)
-                return list
+        return list
+
 
 
 def make_command(list, module_index, port_num, routine_count=-1):
@@ -53,19 +52,19 @@ def make_command(list, module_index, port_num, routine_count=-1):
                     elif value == "off" or value == "0x00":  # off
                         commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\off.json")
                     elif value == "regular random":
-                        commands.append("onoff_regular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_regular_random.json")
                     elif value == "irregular random":
-                        commands.append("onoff_irregular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_irregular_random.json")
                     else:
-                        commands.append("onoff_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_random.json")
                 elif command_type == "color":
                     value = data[1]
                     if value == "regular random":
-                        commands.append("color_regular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_regular_random.json")
                     elif value == "irregular random":
-                        commands.append("color_irregular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_irregular_random.json")
                     elif value == "random":
-                        commands.append("color_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_random.json")
                     elif value == "cw":
                         commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_cw.json")
                     elif value == "dl":
@@ -79,11 +78,11 @@ def make_command(list, module_index, port_num, routine_count=-1):
                 elif command_type == "level":
                     value = data[1]
                     if value == "regular random":
-                        commands.append("level_regular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_regular_random.json")
                     elif value == "irregular random":
-                        commands.append("level_irregular_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_irregular_random.json")
                     elif value == "random":
-                        commands.append("level_random.json")
+                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_random.json")
                     elif value == "10":
                         commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_10.json")
                     elif value == "50":
@@ -115,15 +114,12 @@ def make_command(list, module_index, port_num, routine_count=-1):
                     elif value == "off" or value == "0x00":  # off
                         commands.append(get_zigbee_command(cluster, "0x00", payloads, duration))
                     elif value == "regular random":
-                        # command = random.randint(0x00, 0x01)
                         command = int(data[2])
                         commands.append(get_zigbee_command(cluster, command, payloads, duration))
                     elif value == "irregular random":
-                        # command = random.randint(0x00, 0x01)
                         command = int(data[2])
                         commands.append(get_zigbee_command(cluster, command, payloads, duration))
                     else:
-                        # command = random.randint(0x00, 0x01)
                         command = int(data[2])
                         commands.append(get_zigbee_command(cluster, command, payloads, duration))
                 elif command_type == "color":
@@ -141,8 +137,6 @@ def make_command(list, module_index, port_num, routine_count=-1):
                         payloads = [[num, "0x21"], [0, "0x21"]]
                         commands.append(get_zigbee_command(cluster, command, payloads))
                     elif value == "random":
-                        # num = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                        #                                                                                  0xfeff) + 0xff00
                         num = int(data[2])
                         payloads = [[num, "0x21"], [0, "0x21"]]
                         commands.append(get_zigbee_command(cluster, command, payloads))
@@ -154,18 +148,14 @@ def make_command(list, module_index, port_num, routine_count=-1):
                     cluster = "0x0008"
                     command = "0x04"
                     if value == "regular random":
-                        # num = random.randint(0x00, 0xfe)
                         num = int(data[2])
                         payloads = [[num, "0x20"], [0, "0x21"]]
                         commands.append(get_zigbee_command(cluster, command, payloads))
                     elif value == "irregular random":
-                        # num = random.randint(0x00, 0xfe) + 0xff
                         num = int(data[2])
                         payloads = [[num, "0x20"], [0, "0x21"]]
                         commands.append(get_zigbee_command(cluster, command, payloads))
                     elif value == "random":
-                        # num = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                        #                                                                                    0xfe) + 0xff
                         num = int(data[2])
                         payloads = [[num, "0x20"], [0, "0x21"]]
                         commands.append(get_zigbee_command(cluster, command, payloads))
