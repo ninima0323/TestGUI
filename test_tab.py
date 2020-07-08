@@ -11,9 +11,21 @@ import subprocess
 # UI파일 연결 - UI파일은 Python 코드 파일과 같은 디렉토리에 위치
 form_class = uic.loadUiType("mainwindow.ui")[0]
 
+attribute_model = QStandardItemModel()
 command_model = QStandardItemModel()
 process_model = QStandardItemModel()
 result_model = QStandardItemModel()
+tab_before = 0
+attribute_data = [
+    {"type": "on/off", "objects": ["ON_OFF_ONOFF_ATTR"]},
+    {"type": "color", "objects": ["COLOR_CTRL_CURR_HUE_ATTR", "COLOR_CTRL_CURR_SAT_ATTR",
+                                  "COLOR_CTRL_REMAINING_TIME_ATTR", "COLOR_CTRL_CURR_X_ATTR",
+                                  "COLOR_CTRL_CURR_Y_ATTR", "COLOR_CTRL_COLOR_TEMP_MIRED_ATTR",
+                                  "COLOR_CTRL_COLOR_MODE_ATTR", "COLOR_CTRL_ENHANCED_COLOR_MODE_ATTR",
+                                  "COLOR_CTRL_COLOR_CAPABILITY_ATTR", "COLOR_CTRL_COLOR_TEMP_MIN_MIRED_ATTR",
+                                  "COLOR_CTRL_COLOR_TEMP_MAX_MIRED_ATTR"]},
+    {"type": "level", "objects": ["LVL_CTRL_CURR_LVL_ATTR", "LVL_CTRL_REMAIN_TIME_ATTR",
+                                  "LVL_CTRL_ONOFF_TRANS_TIME_ATTR", "LVL_CTRL_ON_LEVEL_ATTR"]}]
 
 
 # Main화면을 띄우는데 사용되는 Class 선언
@@ -33,6 +45,8 @@ class MainWindow(QMainWindow, form_class):
         self.btn_start.clicked.connect(self.click_start)
         self.btn_save.clicked.connect(self.click_save)
         self.btn_clear_command.clicked.connect(self.click_clear_command)
+
+        self.cbo_module.currentIndexChanged.connect(self.module_changed)
 
         self.btn_up.clicked.connect(self.click_item_up)
         self.btn_down.clicked.connect(self.click_item_down)
@@ -54,6 +68,20 @@ class MainWindow(QMainWindow, form_class):
         self.listView_result.setModel(result_model)
 
         self.tabWidget.currentChanged.connect(self.changed_command_tab)
+        tab_before = self.tabWidget.currentIndex()
+
+        # read attribute tab
+        self.treeView.setModel(attribute_model)
+        self.treeView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.treeView.setSelectionMode(QAbstractItemView.SingleSelection)
+        if self.cbo_module.currentIndex() == 0:
+            for j, _type in enumerate(attribute_data):
+                item = QStandardItem(_type["type"])
+                for obj in _type["objects"]:
+                    child = QStandardItem(obj)
+                    item.appendRow(child)
+                attribute_model.setItem(j, 0, item)
+        self.btn_insert_attribute.clicked.connect(self.click_read_attribute)
 
         # single command tab
         self.cbo_input_onoff.currentIndexChanged.connect(self.select_onoff_input_style)
@@ -92,7 +120,7 @@ class MainWindow(QMainWindow, form_class):
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
             input_command = read_command_from_json(file_name[0], self.cbo_module.currentIndex())
-            if input_command != []:
+            if input_command:
                 command_model.clear()
                 process_model.clear()
                 result_model.clear()
@@ -145,9 +173,10 @@ class MainWindow(QMainWindow, form_class):
                 list.append(item)
             first_item = list[0].split(", ")
             if first_item[0] == "routine":
-                make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(), int(first_item[1]))
+                make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(), int(first_item[1]),
+                             True)
             else:
-                make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex())
+                make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(), make_file=True)
         else:
             print("command not exist")
             QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
@@ -157,9 +186,25 @@ class MainWindow(QMainWindow, form_class):
             command_model.appendRow(QStandardItem(command_string))
 
     def changed_command_tab(self):
-        command_model.clear()
-        process_model.clear()
-        result_model.clear()
+        tab_now = self.tabWidget.currentIndex()
+        # if tab_now != 0: #single, routine
+        #     if tab_before != tab_now:
+        #         command_model.clear()
+        #         process_model.clear()
+        #         result_model.clear()
+        #     else:
+        #         tab_before = tab_now
+
+    def module_changed(self):
+        print("sksksksksksk")
+        if self.cbo_module.currentIndex() == 0:
+            attribute_model.clear()
+            for j, _type in enumerate(attribute_data):
+                item = QStandardItem(_type["type"])
+                for obj in _type["objects"]:
+                    child = QStandardItem(obj)
+                    item.appendRow(child)
+                attribute_model.setItem(j, 0, item)
 
     def select_onoff_input_style(self):
         index = self.cbo_input_onoff.currentIndex()
@@ -243,6 +288,13 @@ class MainWindow(QMainWindow, form_class):
         else:
             self.cbo_routine_level_value.hide()
 
+    def click_read_attribute(self):
+        module_type = self.cbo_module.currentIndex()
+        if module_type == 0:  # Zigbee HA
+            selected = attribute_model.itemData(self.treeView.selectedIndexes()[0])[0]
+            if selected not in ["on/off", "color", "level"]:
+                self.add_command("read attribute, " + selected)
+
     def click_insert(self):
         print("btn_insert Clicked")
         module_type = self.cbo_module.currentIndex()
@@ -284,7 +336,7 @@ class MainWindow(QMainWindow, form_class):
                 if color_input_type == 0:  # self input
                     temp = self.lineEdit_color.text()
                     if "0x" in temp:
-                        item = "color, " + str(int(temp,0))
+                        item = "color, " + str(int(temp, 0))
                         self.add_command(item, color_count)
                     elif temp.isdigit and temp != "":
                         item = "color, " + temp
@@ -300,7 +352,7 @@ class MainWindow(QMainWindow, form_class):
                 else:  # random
                     for i in range(color_count):
                         temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                                                                                                     0xfeff) + 0xff00
+                                                                                                         0xfeff) + 0xff00
                         item = "color, random, " + str(temp)
                         self.add_command(item)
             elif command_type == 3:  # level
@@ -309,7 +361,7 @@ class MainWindow(QMainWindow, form_class):
                 if level_input_type == 0:  # self input
                     temp = self.lineEdit_level.text()
                     if "0x" in temp:
-                        item = "level, " + str(int(temp,0))
+                        item = "level, " + str(int(temp, 0))
                         self.add_command(item, level_count)
                     elif temp.isdigit and temp != "":
                         item = "level, " + temp
@@ -325,7 +377,7 @@ class MainWindow(QMainWindow, form_class):
                 else:
                     for i in range(level_count):
                         temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                                                                                                       0xfe) + 0xff
+                                                                                                           0xfe) + 0xff
                         item = "level, random, " + str(temp)
                         self.add_command(item)
             else:  # disconnect
@@ -395,7 +447,7 @@ class MainWindow(QMainWindow, form_class):
                 else:
                     for i in range(color_routine_count):
                         temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                                                                                                     0xfeff) + 0xff00
+                                                                                                         0xfeff) + 0xff00
                         item_color = "color, random, " + str(temp)
                         color_items.append(item_color)
 
@@ -416,7 +468,7 @@ class MainWindow(QMainWindow, form_class):
                 else:
                     for i in range(level_routine_count):
                         temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                                                                                                       0xfe) + 0xff
+                                                                                                           0xfe) + 0xff
                         item_level = "level, random, " + str(temp)
                         level_items.append(item_level)
 
@@ -552,7 +604,25 @@ class MainWindow(QMainWindow, form_class):
 
     def click_start(self):
         print("btn_start Clicked")
+        # 명령 보내기
         count = command_model.rowCount()
+        if count != 0:
+            list = []
+            for index in range(command_model.rowCount()):
+                item = command_model.item(index).text()
+                list.append(item)
+            first_item = list[0].split(", ")
+            if first_item[0] == "routine":
+                json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(),
+                                                 int(first_item[1]))
+                print(json_type_command)
+            else:
+                json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex())
+                print(json_type_command)
+        else:
+            print("command not exist")
+            QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
+
         if count != 0:
             for index in range(command_model.rowCount()):
                 item = command_model.item(index).text()

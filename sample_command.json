@@ -1,80 +1,17 @@
 {
-	"commands": [
+	"tasks": [
 		{
-			"cluster": "0x0006",
-			"command": "0x01",
+			"task_kind": 1,
+			"cluster": 768,
+			"attr_id": 2,
+			"duration": 0.51
+		},
+		{
+			"task_kind": 0,
+			"cluster": 6,
+			"command": 0,
 			"payloads": null,
 			"duration": 0.5
-		},
-		{
-			"cluster": "0x0300",
-			"command": "0x0a",
-			"payloads": [
-				[
-					308,
-					"0x21"
-				],
-				[
-					0,
-					"0x21"
-				]
-			]
-		},
-		{
-			"cluster": "0x0300",
-			"command": "0x0a",
-			"payloads": [
-				[
-					348,
-					"0x21"
-				],
-				[
-					0,
-					"0x21"
-				]
-			]
-		},
-		{
-			"cluster": "0x0008",
-			"command": "0x04",
-			"payloads": [
-				[
-					96,
-					"0x20"
-				],
-				[
-					0,
-					"0x21"
-				]
-			]
-		},
-		{
-			"cluster": "0x0008",
-			"command": "0x04",
-			"payloads": [
-				[
-					34,
-					"0x20"
-				],
-				[
-					0,
-					"0x21"
-				]
-			]
-		},
-		{
-			"cluster": "0x0008",
-			"command": "0x04",
-			"payloads": [
-				[
-					31,
-					"0x20"
-				],
-				[
-					0,
-					"0x21"
-				]
-			]
 		}
 	]
 }
