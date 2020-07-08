@@ -1,4 +1,6 @@
 import sys
+
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtGui import *
@@ -7,6 +9,7 @@ from command_parser import *
 from openpyxl import Workbook
 import os
 import subprocess
+import time
 
 # UI파일 연결 - UI파일은 Python 코드 파일과 같은 디렉토리에 위치
 form_class = uic.loadUiType("mainwindow.ui")[0]
@@ -15,7 +18,8 @@ attribute_model = QStandardItemModel()
 command_model = QStandardItemModel()
 process_model = QStandardItemModel()
 result_model = QStandardItemModel()
-tab_before = 0
+command_data = []
+log_data = []
 attribute_data = [
     {"type": "on/off", "objects": ["ON_OFF_ONOFF_ATTR"]},
     {"type": "color", "objects": ["COLOR_CTRL_CURR_HUE_ATTR", "COLOR_CTRL_CURR_SAT_ATTR",
@@ -26,6 +30,94 @@ attribute_data = [
                                   "COLOR_CTRL_COLOR_TEMP_MAX_MIRED_ATTR"]},
     {"type": "level", "objects": ["LVL_CTRL_CURR_LVL_ATTR", "LVL_CTRL_REMAIN_TIME_ATTR",
                                   "LVL_CTRL_ONOFF_TRANS_TIME_ATTR", "LVL_CTRL_ON_LEVEL_ATTR"]}]
+
+
+
+class Worker(QThread):
+    threadEvent = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__()
+        # self.command_data = []
+        # self.log_data = []
+        self.isRun = False
+        self.main = parent
+
+    def run(self):
+        while self.isRun:
+            print(command_data)
+            if "iteration" in command_data:  # routine 의 경우
+                iteration = command_data["iteration"]
+                for i in range(iteration):
+                    for item in command_data["task_list"]:
+                        time.sleep(3)
+                        print("로그로그")
+                        # 명령 보내
+                        # 로그 가져온 결과 비교해, 아래처럼 랜덤이 아니라 로그로 ok 여부 판단
+
+                        result = random.randint(0, 2)
+                        if result == 0:
+                            i = QStandardItem(item + ", ok")
+                            i.setBackground(QColor('#7fc97f'))
+                            process_model.appendRow(i)
+                        else:
+                            i = QStandardItem(item + ", error")
+                            i.setBackground(QColor('#f0027f'))
+                            process_model.appendRow(i)
+
+                        log_data.append(item)
+
+            elif "tasks" in command_data:  # routine 형식이 아닐 경우
+                single_command_list = command_data["tasks"]
+                for single_command in single_command_list:
+
+                    time.sleep(3)
+                    print("로그로그")
+                    ## 아래에서 command_string 만드는거 그냥 쓰레드 보여주려고  만듬
+                    task_kind = single_command["task_kind"]
+                    cluster = single_command["cluster"]
+                    command_string = ""
+                    if cluster == ON_OFF_CLUSTER:
+                        if task_kind == 0:
+                            command = single_command["command"]
+                            command_string = "on/off, " + str(command)
+                        else:
+                            attr_id = single_command["attr_id"]
+                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                    elif cluster == COLOR_CTRL_CLUSTER:
+                        if task_kind == 0:
+                            payloads = single_command["payloads"]
+                            command_string = "color, " + str(payloads[0][0])
+                        else:
+                            attr_id = single_command["attr_id"]
+                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                    elif cluster == LVL_CTRL_CLUSTER:
+                        if task_kind == 0:
+                            payloads = single_command["payloads"]
+                            command_string = "level, " + str(payloads[0][0])
+                        else:
+                            attr_id = single_command["attr_id"]
+                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                    ## 위에서 command_string 만드는거 그냥 쓰레드 보여주려고 만듬
+
+                    # single_command 로 명령 보내보고 로그 가져오면 됨
+                    # 로그 가져온 결과 비교해, 아래처럼 랜덤이 아니라 로그로 ok 여부 판단
+
+                    result = random.randint(0, 2)
+                    if result == 0:
+                        i = QStandardItem(command_string + ", ok")
+                        i.setBackground(QColor('#7fc97f'))
+                        process_model.appendRow(i)
+                    else:
+                        i = QStandardItem(command_string + ", error")
+                        i.setBackground(QColor('#f0027f'))
+                        process_model.appendRow(i)
+
+                    log_data.append(command_string)
+
+            # 로그 다 찍고 표시 다 했을 경우 아래 처럼 쓰레드 종료
+            self.isRun = False
+            self.threadEvent.emit()
 
 
 # Main화면을 띄우는데 사용되는 Class 선언
@@ -69,6 +161,8 @@ class MainWindow(QMainWindow, form_class):
 
         self.tabWidget.currentChanged.connect(self.changed_command_tab)
         tab_before = self.tabWidget.currentIndex()
+        self.worker = Worker()
+        self.worker.threadEvent.connect(self.show_result)
 
         # read attribute tab
         self.treeView.setModel(attribute_model)
@@ -111,9 +205,12 @@ class MainWindow(QMainWindow, form_class):
 
     def click_clear_command(self):
         print("clear command")
-        command_model.clear()
-        process_model.clear()
-        result_model.clear()
+        if self.worker.isRun:
+            command_model.clear()
+        else:
+            command_model.clear()
+            process_model.clear()
+            result_model.clear()
 
     def import_command(self):
         print("import command")
@@ -196,7 +293,6 @@ class MainWindow(QMainWindow, form_class):
         #         tab_before = tab_now
 
     def module_changed(self):
-        print("sksksksksksk")
         if self.cbo_module.currentIndex() == 0:
             attribute_model.clear()
             for j, _type in enumerate(attribute_data):
@@ -596,48 +692,75 @@ class MainWindow(QMainWindow, form_class):
 
     def click_more(self):
         print("btn_more Clicked")
-        ResultWindow(self)
+        if self.worker.isRun:
+            print("already running")
+            QMessageBox.about(self, "already running", "실험이 진행중이라, 결과 저장이 불가능합니다.")
+        elif not log_data:
+            print("log not exist")
+            QMessageBox.about(self, "log not exist", "실험 결과가 존재하지 않습니다.")
+        else:
+            ResultWindow(self)
 
     def click_save(self):
         print("btn_save clicked")
-        save_result()
+        if self.worker.isRun:
+            print("already running")
+            QMessageBox.about(self, "already running", "실험이 진행중이라, 결과 저장이 불가능합니다.")
+        elif not log_data:
+            print("log not exist")
+            QMessageBox.about(self, "log not exist", "실험 결과가 존재하지 않습니다.")
+        else:
+            save_result()
 
     def click_start(self):
         print("btn_start Clicked")
         # 명령 보내기
         count = command_model.rowCount()
         if count != 0:
-            list = []
-            for index in range(command_model.rowCount()):
-                item = command_model.item(index).text()
-                list.append(item)
-            first_item = list[0].split(", ")
-            if first_item[0] == "routine":
-                json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(),
-                                                 int(first_item[1]))
-                print(json_type_command)
+            if self.worker.isRun:
+                print("already running")
+                QMessageBox.about(self, "already running", "이미 진행중인 실험이 있습니다.")
             else:
-                json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex())
-                print(json_type_command)
+                global command_data
+                process_model.clear()
+                result_model.clear()
+                list = []
+                for index in range(command_model.rowCount()):
+                    item = command_model.item(index).text()
+                    list.append(item)
+                first_item = list[0].split(", ")
+                if first_item[0] == "routine":
+                    json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex(),
+                                                     int(first_item[1]))
+                    command_data = json_type_command
+                    self.worker.isRun = True
+                    self.worker.start()
+                else:
+                    json_type_command = make_command(list, self.cbo_module.currentIndex(), self.cbo_port.currentIndex())
+                    command_data = json_type_command
+                    self.worker.isRun = True
+                    self.worker.start()
         else:
             print("command not exist")
             QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
 
-        if count != 0:
-            for index in range(command_model.rowCount()):
-                item = command_model.item(index).text()
-                result = random.randint(0, 2)
-                if result == 0:
-                    i = QStandardItem(item + ", ok")
-                    i.setBackground(QColor('#7fc97f'))
-                    process_model.appendRow(i)
-                else:
-                    i = QStandardItem(item + ", error")
-                    i.setBackground(QColor('#f0027f'))
-                    process_model.appendRow(i)
-            self.show_result()
+        # if count != 0:
+        #     for index in range(command_model.rowCount()):
+        #         item = command_model.item(index).text()
+        #         result = random.randint(0, 2)
+        #         if result == 0:
+        #             i = QStandardItem(item + ", ok")
+        #             i.setBackground(QColor('#7fc97f'))
+        #             process_model.appendRow(i)
+        #         else:
+        #             i = QStandardItem(item + ", error")
+        #             i.setBackground(QColor('#f0027f'))
+        #             process_model.appendRow(i)
 
     def show_result(self):
+        print(log_data)
+        ##이미 쓰레드에서 process 찍었을테니, 그대로 보여주기
+        ##다시 가져오는 이유는 아이템 복제가 안되기 때문
         for index in range(process_model.rowCount()):
             item = process_model.item(index).text()
             result = item.split(", ")
@@ -666,7 +789,6 @@ class ResultWindow(QMainWindow):
         self.tableView.setRowHeight(table_model.rowCount() - 1, 20)
         table_model.setHorizontalHeaderLabels(['시간', 'CLuster', 'Command', 'payload', 'return value', 'result'])
 
-        # 실험 결과 가져와서 추가
         table_model.appendRow([QStandardItem("1"), QStandardItem('ON_OFF_CLUSTER'), QStandardItem('ON_OFF_ON_CMD'),
                                QStandardItem('None'), QStandardItem('True'), QStandardItem('ok')])
         self.show()
@@ -675,6 +797,7 @@ class ResultWindow(QMainWindow):
         save_result()
 
     def click_print(self):
+        save_result()
         if sys.platform == "win32":
             os.startfile('test.xlsx', "print")
         else:
@@ -692,7 +815,7 @@ def save_result():
     write_ws['E1'] = 'return value'
     write_ws['F1'] = 'result'
 
-    # 실험 결과 가져와서 추가
+    # 실험 결과 log_data 가져와서 추가하기
     write_ws.append([1, 'ON_OFF_CLUSTER', 'ON_OFF_ON_CMD', 'None', 'True', 'ok'])
 
     write_wb.save('test.xlsx')
