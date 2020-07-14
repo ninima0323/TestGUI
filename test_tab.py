@@ -219,8 +219,6 @@ class MainWindow(QMainWindow, form_class):
             input_command = read_command_from_json(file_name[0], self.cbo_module.currentIndex())
             if input_command:
                 command_model.clear()
-                process_model.clear()
-                result_model.clear()
                 for command in input_command:
                     self.add_command(command)
             else:

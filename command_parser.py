@@ -165,9 +165,9 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
                     cluster = ON_OFF_CLUSTER
                     payloads = None
                     duration = 0.5
-                    if value == "on" or value == "0x01":  # on
+                    if value == "on" or value == "0x01" or value == "1":  # on
                         commands.append(get_zigbee_command(cluster, 0x01, payloads, duration))
-                    elif value == "off" or value == "0x00":  # off
+                    elif value == "off" or value == "0x00" or value == "0":  # off
                         commands.append(get_zigbee_command(cluster, 0x00, payloads, duration))
                     elif value == "regular random":
                         command = int(data[2])
