@@ -71,20 +71,58 @@ class Worker(QThread):
                     print("Please search for the dongle via SmartThings App within 5 seconds.")
                     time.sleep(5.0)
 
-                if "iteration" in command_data:  # routine 의 경우 ?????????
+                if "iteration" in command_data:  # routine 의 경우
                     iteration = command_data["iteration"]
                     for i in range(iteration):
                         for item in command_data["task_list"]:
+                            duration = 0.51
+                            with open(item) as command_file:
+                                content = json.load(command_file)
+                                cluster = int(content['cluster'], 16)
+                                command = int(content['command'], 16)
+                                _payloads = content['payloads']
+                                if _payloads == "None":
+                                    payloads = None
+                                else:
+                                    payloads = [(_payloads[0][0], int(_payloads[0][1], 16)),
+                                                (_payloads[1][0], int(_payloads[1][1], 16))]
+                                    if payloads[1][0] != 0:
+                                        duration = payloads[1][0] * 0.1
+                            if payloads is None:
+                                cli_instance.zcl.generic(
+                                    eui64=self.device_addr,
+                                    ep=self.device_ep,
+                                    profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                    cluster=cluster,
+                                    cmd_id=command)
+                            else:
+                                cli_instance.zcl.generic(
+                                    eui64=self.device_addr,
+                                    ep=self.device_ep,
+                                    profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                    cluster=cluster,
+                                    cmd_id=command,
+                                    payload=payloads)
+                            time.sleep(duration)
+                            attr_id, attr_type = get_attr_element(cluster, command)
+                            param_attr = Attribute(cluster, attr_id, attr_type)
+                            returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
+                                                                      ep=ULTRA_THIN_WAFER_ENDPOINT)
+                            return_val = returned_attr.value
+                            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                            log_item = {"timestamp": timestamp, "task_kind": "COMMAND_TASK",
+                                        "cluster": zigbee_cluster_to_str[cluster],
+                                        "command": command, "payloads": payloads,
+                                        "duration": duration, "return_val": return_val}
                             log_list.append(log_item)
                             if return_val is not None:
-                                i = QStandardItem(item + ", ok")
+                                i = QStandardItem(command_string + ", ok")
                                 i.setBackground(QColor('#7fc97f'))
                                 process_model.appendRow(i)
                             else:
-                                i = QStandardItem(item + ", error")
+                                i = QStandardItem(command_string + ", error")
                                 i.setBackground(QColor('#f0027f'))
                                 process_model.appendRow(i)
-
                 elif "tasks" in command_data:  # routine 형식이 아닐 경우
                     single_command_list = command_data["tasks"]
                     for single_command in single_command_list:
