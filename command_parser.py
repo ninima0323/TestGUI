@@ -1,7 +1,9 @@
 import json
 from collections import OrderedDict
-import random
-from constants import *
+from DongleHandler.constants import *
+
+zigbee_cluster_to_str = {ON_OFF_CLUSTER: "ON_OFF_CLUSTER", COLOR_CTRL_CLUSTER: "COLOR_CTRL_CLUSTER",
+                         LVL_CTRL_CLUSTER: "LVL_CTRL_CLUSTER"}
 
 zigbee_str_to_attr = {
     ON_OFF_CLUSTER: {"ON_OFF_ONOFF_ATTR": ON_OFF_ONOFF_ATTR},
@@ -83,16 +85,15 @@ def read_command_from_json(file_name, module_index):
         return list
 
 
-def make_command(list, module_index, port_num, routine_count=-1, make_file=False):
+def make_command(list, module_index, routine_count=-1, make_file=False):
     if routine_count > 0:  # routine 의 경우
         commands = []
-        serial_port = port_num + 1
         for item in list:
             data = item.split(", ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
                 if command_type == "connect":
-                    print("connect", serial_port)
+                    print("connect")
                 elif command_type == "on/off":
                     value = data[1]
                     if value == "on" or value == "0x01":  # on
@@ -141,7 +142,7 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
                     elif value == "100":
                         commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_100.json")
                 elif command_type == "disconnect":
-                    print("disconnect", serial_port)
+                    print("disconnect")
         file_data = OrderedDict()
         file_data["device"] = "DongleHandler\\..\\resource\\device\\Ultra Thin Wafer.json"
         file_data["connection"] = 0
@@ -153,22 +154,23 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
         return file_data
     else:  # single command 와 read attribute의 경우
         commands = []
-        serial_port = port_num + 1
         for item in list:
             data = item.split(", ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
                 if command_type == "connect":
-                    print("connect", serial_port)
+                    print("connect")
                 elif command_type == "on/off":
                     value = data[1]
                     cluster = ON_OFF_CLUSTER
                     payloads = None
-                    duration = 0.5
+                    duration = 0.51
                     if value == "on" or value == "0x01" or value == "1":  # on
-                        commands.append(get_zigbee_command(cluster, 0x01, payloads, duration))
+                        commands.append(get_zigbee_command(cluster, ON_OFF_ON_CMD, payloads, duration))
                     elif value == "off" or value == "0x00" or value == "0":  # off
-                        commands.append(get_zigbee_command(cluster, 0x00, payloads, duration))
+                        commands.append(get_zigbee_command(cluster, ON_OFF_OFF_CMD, payloads, duration))
+                    elif value == "toggle":  # toggle
+                        commands.append(get_zigbee_command(cluster, ON_OFF_TOGGLE_CMD, payloads, duration))
                     elif value == "regular random":
                         command = int(data[2])
                         commands.append(get_zigbee_command(cluster, command, payloads, duration))
@@ -182,7 +184,7 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
                     value = data[1]
                     cluster = COLOR_CTRL_CLUSTER
                     command = 0x0a
-                    duration = 0.5
+                    duration = 0.51
                     if value == "regular random":
                         num = int(data[2])
                         payloads = [[num, 0x21], [0, 0x21]]
@@ -202,7 +204,7 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
                     value = data[1]
                     cluster = LVL_CTRL_CLUSTER
                     command = 0x04
-                    duration = 0.5
+                    duration = 0.51
                     if value == "regular random":
                         num = int(data[2])
                         payloads = [[num, 0x20], [0, 0x21]]
@@ -219,7 +221,7 @@ def make_command(list, module_index, port_num, routine_count=-1, make_file=False
                         payloads = [[int(value), 0x20], [0, 0x21]]
                         commands.append(get_zigbee_command(cluster, command, payloads, duration))
                 elif command_type == "disconnect":
-                    print("disconnect", serial_port)
+                    print("disconnect")
                 elif command_type == "read attribute":
                     task_kind = 1
                     attribute = data[1]
