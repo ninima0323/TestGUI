@@ -1,13 +1,11 @@
 {
-	"device": "DongleHandler\\..\\resource\\device\\Ultra Thin Wafer.json",
-	"connection": 0,
 	"task_list": [
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\on.json",
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\color_cw.json",
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\color_cw.json",
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\level_10.json",
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\level_10.json",
-		"DongleHandler\\..\\resource\\command_type\\Zigbee\\level_10.json"
+		"resource\\command\\Zigbee\\on.json",
+		"resource\\command\\Zigbee\\color_cw.json",
+		"resource\\command\\Zigbee\\color_cw.json",
+		"resource\\command\\Zigbee\\level_10.json",
+		"resource\\command\\Zigbee\\level_10.json",
+		"resource\\command\\Zigbee\\level_10.json"
 	],
 	"iteration": 4
 }

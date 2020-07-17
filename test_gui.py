@@ -6,7 +6,7 @@ from PyQt5 import uic
 from PyQt5.QtGui import *
 from PyQt5 import QtCore
 from DongleHandler import *
-
+import random
 from command_parser import *
 from openpyxl import Workbook
 import os
@@ -22,6 +22,7 @@ process_model = QStandardItemModel()
 result_model = QStandardItemModel()
 command_data = []
 log_data = []
+is_changed = False
 attribute_data = [
     {"type": "on/off", "objects": ["ON_OFF_ONOFF_ATTR"]},
     {"type": "color", "objects": ["COLOR_CTRL_CURR_HUE_ATTR", "COLOR_CTRL_CURR_SAT_ATTR",
@@ -76,53 +77,112 @@ class Worker(QThread):
                     for i in range(iteration):
                         for item in command_data["task_list"]:
                             duration = 0.51
-                            with open(item) as command_file:
-                                content = json.load(command_file)
-                                cluster = int(content['cluster'], 16)
-                                command = int(content['command'], 16)
-                                _payloads = content['payloads']
-                                if _payloads == "None":
-                                    payloads = None
+                            if "random" in item:
+                                cluster = 0
+                                command = 0
+                                payloads = None
+                                if "onoff" in item:
+                                    cluster = ON_OFF_CLUSTER
+                                    random_num = random.randint(0,2)
+                                    if random_num == 0:
+                                        command = ON_OFF_OFF_CMD
+                                    elif random_num == 1:
+                                        command = ON_OFF_ON_CMD
+                                    else:
+                                        command = ON_OFF_TOGGLE_CMD
+                                elif "color" in item:
+                                    cluster = COLOR_CTRL_CLUSTER 
+                                    command = COLOR_CTRL_MV_TO_COLOR_CMD
+                                    cmd = Cmd(cluster=cluster, command=command).generate_random_cmd()
+                                    payloads = cmd.payloads
+                                elif "level" in item:
+                                    cluster = LVL_CTRL_CLUSTER
+                                    command = LVL_CTRL_MV_TO_LVL_CMD
+                                    cmd = Cmd(cluster=cluster, command=command).generate_random_cmd()
+                                    payloads = cmd.payloads
+                                if payloads is None:
+                                    cli_instance.zcl.generic(
+                                        eui64=self.device_addr,
+                                        ep=self.device_ep,
+                                        profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                        cluster=cluster,
+                                        cmd_id=command)
                                 else:
-                                    payloads = [(_payloads[0][0], int(_payloads[0][1], 16)),
-                                                (_payloads[1][0], int(_payloads[1][1], 16))]
-                                    if payloads[1][0] != 0:
-                                        duration = payloads[1][0] * 0.1
-                            if payloads is None:
-                                cli_instance.zcl.generic(
-                                    eui64=self.device_addr,
-                                    ep=self.device_ep,
-                                    profile=DEFAULT_ZIGBEE_PROFILE_ID,
-                                    cluster=cluster,
-                                    cmd_id=command)
+                                    cli_instance.zcl.generic(
+                                        eui64=self.device_addr,
+                                        ep=self.device_ep,
+                                        profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                        cluster=cluster,
+                                        cmd_id=command,
+                                        payload=payloads)
+                                time.sleep(duration)
+                                attr_id, attr_type = get_attr_element(cluster, command)
+                                param_attr = Attribute(cluster, attr_id, attr_type)
+                                returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
+                                                                          ep=ULTRA_THIN_WAFER_ENDPOINT)
+                                return_val = returned_attr.value
+                                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                                log_item = {"timestamp": timestamp, "task_kind": "COMMAND_TASK",
+                                            "cluster": zigbee_cluster_to_str[cluster],
+                                            "command": command, "payloads": payloads,
+                                            "duration": duration, "return_val": return_val}
+                                log_list.append(log_item)
+                                if return_val is not None:
+                                    i = QStandardItem(command_string + ", ok")
+                                    i.setBackground(QColor('#7fc97f'))
+                                    process_model.appendRow(i)
+                                else:
+                                    i = QStandardItem(command_string + ", error")
+                                    i.setBackground(QColor('#f0027f'))
+                                    process_model.appendRow(i)
                             else:
-                                cli_instance.zcl.generic(
-                                    eui64=self.device_addr,
-                                    ep=self.device_ep,
-                                    profile=DEFAULT_ZIGBEE_PROFILE_ID,
-                                    cluster=cluster,
-                                    cmd_id=command,
-                                    payload=payloads)
-                            time.sleep(duration)
-                            attr_id, attr_type = get_attr_element(cluster, command)
-                            param_attr = Attribute(cluster, attr_id, attr_type)
-                            returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
-                                                                      ep=ULTRA_THIN_WAFER_ENDPOINT)
-                            return_val = returned_attr.value
-                            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                            log_item = {"timestamp": timestamp, "task_kind": "COMMAND_TASK",
-                                        "cluster": zigbee_cluster_to_str[cluster],
-                                        "command": command, "payloads": payloads,
-                                        "duration": duration, "return_val": return_val}
-                            log_list.append(log_item)
-                            if return_val is not None:
-                                i = QStandardItem(command_string + ", ok")
-                                i.setBackground(QColor('#7fc97f'))
-                                process_model.appendRow(i)
-                            else:
-                                i = QStandardItem(command_string + ", error")
-                                i.setBackground(QColor('#f0027f'))
-                                process_model.appendRow(i)
+                                with open(item) as command_file:
+                                    content = json.load(command_file)
+                                    cluster = int(content['cluster'], 16)
+                                    command = int(content['command'], 16)
+                                    _payloads = content['payloads']
+                                    if _payloads == "None":
+                                        payloads = None
+                                    else:
+                                        payloads = [(_payloads[0][0], int(_payloads[0][1], 16)),
+                                                    (_payloads[1][0], int(_payloads[1][1], 16))]
+                                        if payloads[1][0] != 0:
+                                            duration = payloads[1][0] * 0.1
+                                if payloads is None:
+                                    cli_instance.zcl.generic(
+                                        eui64=self.device_addr,
+                                        ep=self.device_ep,
+                                        profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                        cluster=cluster,
+                                        cmd_id=command)
+                                else:
+                                    cli_instance.zcl.generic(
+                                        eui64=self.device_addr,
+                                        ep=self.device_ep,
+                                        profile=DEFAULT_ZIGBEE_PROFILE_ID,
+                                        cluster=cluster,
+                                        cmd_id=command,
+                                        payload=payloads)
+                                time.sleep(duration)
+                                attr_id, attr_type = get_attr_element(cluster, command)
+                                param_attr = Attribute(cluster, attr_id, attr_type)
+                                returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
+                                                                          ep=ULTRA_THIN_WAFER_ENDPOINT)
+                                return_val = returned_attr.value
+                                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                                log_item = {"timestamp": timestamp, "task_kind": "COMMAND_TASK",
+                                            "cluster": zigbee_cluster_to_str[cluster],
+                                            "command": command, "payloads": payloads,
+                                            "duration": duration, "return_val": return_val}
+                                log_list.append(log_item)
+                                if return_val is not None:
+                                    i = QStandardItem(command_string + ", ok")
+                                    i.setBackground(QColor('#7fc97f'))
+                                    process_model.appendRow(i)
+                                else:
+                                    i = QStandardItem(command_string + ", error")
+                                    i.setBackground(QColor('#f0027f'))
+                                    process_model.appendRow(i)
                 elif "tasks" in command_data:  # routine 형식이 아닐 경우
                     single_command_list = command_data["tasks"]
                     for single_command in single_command_list:
@@ -174,7 +234,7 @@ class Worker(QThread):
                             attr_id, attr_type = get_attr_element(cluster, command)
                             param_attr = Attribute(cluster, attr_id, attr_type)
                             returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
-                                                                      ep=ULTRA_THIN_WAFER_ENDPOINT)
+                                                                       ep=ULTRA_THIN_WAFER_ENDPOINT)
                             return_val = returned_attr.value
                             timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                             log_item = {"timestamp": timestamp, "task_kind": "COMMAND_TASK",
@@ -191,8 +251,10 @@ class Worker(QThread):
                                 i.setBackground(QColor('#f0027f'))
                                 process_model.appendRow(i)
                         elif task_kind == READ_ATTRIBUTE_TASK:
+                            cluster = single_command["cluster"]
                             attr_id = single_command["attr_id"]
-                            attr_type = single_command["attr_type"]
+                            duration = single_command["duration"]
+                            attr_type = ReadAttr(cluster, attr_id, duration).attr_type
                             param_attr = Attribute(cluster, attr_id, attr_type)
                             returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
                                                                       ep=ULTRA_THIN_WAFER_ENDPOINT)
@@ -212,8 +274,10 @@ class Worker(QThread):
                                 i.setBackground(QColor('#f0027f'))
                                 process_model.appendRow(i)
                         elif task_kind == WRITE_ATTRIBUTE_TASK:
+                            cluster = single_command["cluster"]
                             attr_id = single_command["attr_id"]
-                            attr_type = single_command["attr_type"]
+                            duration = single_command["duration"]
+                            attr_type = ReadAttr(cluster, attr_id, duration).attr_type
                             param_attr = Attribute(cluster, attr_id, attr_type)
                             cli_instance.zcl.writeattr(self.device_addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
                             returned_attr = cli_instance.zcl.readattr(self.device_addr, param_attr,
@@ -335,7 +399,6 @@ class MainWindow(QMainWindow, form_class):
             result_model.clear()
 
     def import_command(self):
-        print("import command")
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
             input_command = read_command_from_json(file_name[0], self.cbo_module.currentIndex())
@@ -344,11 +407,9 @@ class MainWindow(QMainWindow, form_class):
                 for command in input_command:
                     self.add_command(command)
             else:
-                print("not a command file")
-                QMessageBox.about(self, "not a command file", "명령 파일이 아닙니다.")
+                QMessageBox.about(self, "명령 정보 가져오기 실패", "명령 파일이 아닙니다.")
 
     def import_device(self):
-        print("import device")
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
             with open(file_name[0]) as json_file:
@@ -359,11 +420,9 @@ class MainWindow(QMainWindow, form_class):
                     self.lineEdit_device_addr.setText(json_data["eui64"])
                     self.lineEdit_device_ep.setText(json_data["ep"])
                 else:
-                    print("not a device file")
-                    QMessageBox.about(self, "not a device file", "장치 파일이 아닙니다.")
+                    QMessageBox.about(self, "장치 정보 불러오기 실패", "장치 파일이 아닙니다.")
 
     def export_device(self):
-        print("export device")
         name = self.lineEdit_device_name.text()
         uuid = self.lineEdit_device_uuid.text()
         addr = self.lineEdit_device_addr.text()
@@ -377,11 +436,9 @@ class MainWindow(QMainWindow, form_class):
             with open('device.json', 'w', encoding='utf-8') as make_file:
                 json.dump(device_data, make_file, ensure_ascii=False, indent="\t")
         else:
-            print("device info not exist")
-            QMessageBox.about(self, "fail making json", "장치 정보가 입력되지 않았습니다.")
+            QMessageBox.about(self, "장치정보 파일 생성 실패", "장치 정보가 입력되지 않았습니다.")
 
     def export_command(self):
-        print("\nexport command")
         count = command_model.rowCount()
         if count != 0:
             list = []
@@ -394,8 +451,7 @@ class MainWindow(QMainWindow, form_class):
             else:
                 make_command(list, self.cbo_module.currentIndex(), make_file=True)
         else:
-            print("command not exist")
-            QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
+            QMessageBox.about(self, "명령 파일 생성 실패", "명령이 입력되지 않았습니다.")
 
     def add_command(self, command_string, count=1):
         for i in range(count):
@@ -412,15 +468,26 @@ class MainWindow(QMainWindow, form_class):
         #         tab_before = tab_now
 
     def set_serial_port(self):
-        with open('resource\\dongle_status.json', "r") as dongle_file:
-            dongle_config = json.load(dongle_file)
-            status = dongle_config['status']
-            dongle_file.close()
-        if status == 0:
+        global is_changed
+        if self.worker.isRun and not is_changed:
+            QMessageBox.about(self, "시리얼 포트 설정 실패", "실험이 진행중이라 포트가 변경되지 않습니다.")
+            with open('resource\\dongle_status.json', "r") as dongle_file:
+                dongle_config = json.load(dongle_file)
+                port = dongle_config['port']
+                is_changed = True
+                self.cbo_port.setCurrentIndex(int(port.split("COM")[1])-1)
+                dongle_file.close()
+        elif not self.worker.isRun:
+            is_changed = False
+            with open('resource\\dongle_status.json', "r") as dongle_file:
+                dongle_config = json.load(dongle_file)
+                status = dongle_config['status']
+                dongle_file.close()
             with open('resource\\dongle_status.json', "w") as dongle_file:
                 dongle_config['port'] = self.cbo_port.currentText()
                 json.dump(dongle_config, dongle_file)
                 dongle_file.close()
+        
 
     def module_changed(self):
         if self.cbo_module.currentIndex() == 0:
@@ -645,15 +712,15 @@ class MainWindow(QMainWindow, form_class):
                         print("insert nothing")
                 elif onoff_input_type == 1:  # regular random
                     for i in range(onoff_routine_count):
-                        item_onoff = "on/off, regular random, " + str(random.randint(0x00, 0x01))
+                        item_onoff = "on/off, regular random" 
                         onoff_items.append(item_onoff)
                 elif onoff_input_type == 2:  # irregular random
                     for i in range(onoff_routine_count):
-                        item_onoff = "on/off, irregular random, " + str(random.randint(0x00, 0x01))
+                        item_onoff = "on/off, irregular random" 
                         onoff_items.append(item_onoff)
                 else:  # random
                     for i in range(onoff_routine_count):
-                        item_onoff = "on/off, random, " + str(random.randint(0x00, 0x01))
+                        item_onoff = "on/off, random"
                         onoff_items.append(item_onoff)
 
             color_input_type = self.cbo_input_color_routine.currentIndex()
@@ -664,17 +731,15 @@ class MainWindow(QMainWindow, form_class):
                     item_color = "color, " + temp
                 elif color_input_type == 1:  # regular random
                     for i in range(color_routine_count):
-                        item_color = "color, regular random, " + str(random.randint(200, 370))
+                        item_color = "color, regular random"
                         color_items.append(item_color)
                 elif color_input_type == 2:  # irregular random
                     for i in range(color_routine_count):
-                        item_color = "color, irregular random, " + str(random.randint(0x0000, 0xfeff) + 0xff00)
+                        item_color = "color, irregular random"
                         color_items.append(item_color)
                 else:
                     for i in range(color_routine_count):
-                        temp = random.randint(200, 370) if random.randint(0, 1) == 0 else random.randint(0x0000,
-                                                                                                         0xfeff) + 0xff00
-                        item_color = "color, random, " + str(temp)
+                        item_color = "color, random"
                         color_items.append(item_color)
 
             level_input_type = self.cbo_input_color_routine.currentIndex()
@@ -685,17 +750,15 @@ class MainWindow(QMainWindow, form_class):
                     item_level = "level, " + temp
                 elif level_input_type == 1:  # regular random
                     for i in range(level_routine_count):
-                        item_level = "level, regular random, " + str(random.randint(0x00, 0xfe))
+                        item_level = "level, regular random"
                         level_items.append(item_level)
                 elif level_input_type == 2:  # irregular random
                     for i in range(level_routine_count):
-                        item_level = "level, irregular random, " + str(random.randint(0x00, 0xfe) + 0xff)
+                        item_level = "level, irregular random"
                         level_items.append(item_level)
                 else:
                     for i in range(level_routine_count):
-                        temp = random.randint(0x00, 0xfe) if random.randint(0, 1) == 0 else random.randint(0x00,
-                                                                                                           0xfe) + 0xff
-                        item_level = "level, random, " + str(temp)
+                        item_level = "level, random"
                         level_items.append(item_level)
 
             self.add_command("routine, " + str(self.spinBox_routine.value()))
@@ -821,29 +884,22 @@ class MainWindow(QMainWindow, form_class):
         # else: #UART
 
     def click_more(self):
-        print("btn_more Clicked")
         if self.worker.isRun:
-            print("already running")
-            QMessageBox.about(self, "already running", "실험이 진행중이라, 결과 저장이 불가능합니다.")
+            QMessageBox.about(self, "더보기 실패", "실험이 진행중이라, 결과 저장이 불가능합니다.")
         elif not log_data:
-            print("log not exist")
-            QMessageBox.about(self, "log not exist", "실험 결과가 존재하지 않습니다.")
+            QMessageBox.about(self, "더보기 실패", "실험 결과가 존재하지 않습니다.")
         else:
             ResultWindow(self)
 
     def click_save(self):
-        print("btn_save clicked")
         if self.worker.isRun:
-            print("already running")
-            QMessageBox.about(self, "already running", "실험이 진행중이라, 결과 저장이 불가능합니다.")
+            QMessageBox.about(self, "결과 저장 실패", "실험이 진행중이라, 결과 저장이 불가능합니다.")
         elif not log_data:
-            print("log not exist")
-            QMessageBox.about(self, "log not exist", "실험 결과가 존재하지 않습니다.")
+            QMessageBox.about(self, "결과 저장 실패", "실험 결과가 존재하지 않습니다.")
         else:
             save_result()
 
     def click_start(self):
-        print("btn_start Clicked")
         # 명령 보내기
         name = self.lineEdit_device_name.text()
         uuid = self.lineEdit_device_uuid.text()
@@ -853,8 +909,7 @@ class MainWindow(QMainWindow, form_class):
         count = command_model.rowCount()
         if name != "" and uuid != "" and addr != "" and ep != "" and count != 0:
             if self.worker.isRun:
-                print("already running")
-                QMessageBox.about(self, "already running", "이미 진행중인 실험이 있습니다.")
+                QMessageBox.about(self, "실험 시작 실패", "이미 진행중인 실험이 있습니다.")
             else:
                 global command_data
                 process_model.clear()
@@ -870,17 +925,15 @@ class MainWindow(QMainWindow, form_class):
                 else:
                     json_type_command = make_command(list, module_type)
                     command_data = json_type_command
-                self.worker.device_addr = addr
+                self.worker.device_addr = int(addr, 16)
                 self.worker.ep = int(ep)
                 self.worker.module_type = module_type
                 self.worker.isRun = True
                 self.worker.start()
         elif count == 0:
-            print("command not exist")
-            QMessageBox.about(self, "fail making json", "커맨드가 입력되지 않았습니다.")
+            QMessageBox.about(self, "실험 시작 실패", "커맨드가 입력되지 않았습니다.")
         else:
-            print("device info not exist")
-            QMessageBox.about(self, "fail making json", "장치 정보가 입력되지 않았습니다.")
+            QMessageBox.about(self, "실험 시작 실패", "장치 정보가 입력되지 않았습니다.")
 
     def show_result(self):
         print(log_data)

@@ -97,55 +97,53 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                 elif command_type == "on/off":
                     value = data[1]
                     if value == "on" or value == "0x01":  # on
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\on.json")
+                        commands.append("resource\\command\\Zigbee\\on.json")
                     elif value == "off" or value == "0x00":  # off
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\off.json")
+                        commands.append("resource\\command\\Zigbee\\off.json")
                     elif value == "regular random":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_regular_random.json")
+                        commands.append("resource\\command\\Zigbee\\onoff_regular_random.json")
                     elif value == "irregular random":
                         commands.append(
-                            "DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_irregular_random.json")
+                            "resource\\command\\Zigbee\\onoff_irregular_random.json")
                     else:
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\onoff_random.json")
+                        commands.append("resource\\command\\Zigbee\\onoff_random.json")
                 elif command_type == "color":
                     value = data[1]
                     if value == "regular random":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_regular_random.json")
+                        commands.append("resource\\command\\Zigbee\\color_regular_random.json")
                     elif value == "irregular random":
                         commands.append(
-                            "DongleHandler\\..\\resource\\command_type\\Zigbee\\color_irregular_random.json")
+                            "resource\\command\\Zigbee\\color_irregular_random.json")
                     elif value == "random":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_random.json")
+                        commands.append("resource\\command\\Zigbee\\color_random.json")
                     elif value == "cw":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_cw.json")
+                        commands.append("resource\\command\\Zigbee\\color_cw.json")
                     elif value == "dl":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_dl.json")
+                        commands.append("resource\\command\\Zigbee\\color_dl.json")
                     elif value == "nw":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_nw.json")
+                        commands.append("resource\\command\\Zigbee\\color_nw.json")
                     elif value == "sw":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_sw.json")
+                        commands.append("resource\\command\\Zigbee\\color_sw.json")
                     elif value == "ww":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\color_ww.json")
+                        commands.append("resource\\command\\Zigbee\\color_ww.json")
                 elif command_type == "level":
                     value = data[1]
                     if value == "regular random":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_regular_random.json")
+                        commands.append("resource\\command\\Zigbee\\level_regular_random.json")
                     elif value == "irregular random":
                         commands.append(
-                            "DongleHandler\\..\\resource\\command_type\\Zigbee\\level_irregular_random.json")
+                            "resource\\command\\Zigbee\\level_irregular_random.json")
                     elif value == "random":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_random.json")
+                        commands.append("resource\\command\\Zigbee\\level_random.json")
                     elif value == "10":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_10.json")
+                        commands.append("resource\\command\\Zigbee\\level_10.json")
                     elif value == "50":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_50.json")
+                        commands.append("resource\\command\\Zigbee\\level_50.json")
                     elif value == "100":
-                        commands.append("DongleHandler\\..\\resource\\command_type\\Zigbee\\level_100.json")
+                        commands.append("resource\\command\\Zigbee\\level_100.json")
                 elif command_type == "disconnect":
                     print("disconnect")
         file_data = OrderedDict()
-        file_data["device"] = "DongleHandler\\..\\resource\\device\\Ultra Thin Wafer.json"
-        file_data["connection"] = 0
         file_data["task_list"] = commands
         file_data["iteration"] = routine_count
         if make_file:
