@@ -111,4 +111,4 @@ def parse_json_command(file_name):
             payloads   = [(_payloads[0][0], int(_payloads[0][1], 16)), (_payloads[1][0], int(_payloads[1][1], 16))]
             if payloads[1][0] != 0:
                 duration = payloads[1][0]*0.1
-    return Task(cluster, command, payloads, duration)
+    return Cmd(cluster, command, payloads, duration)

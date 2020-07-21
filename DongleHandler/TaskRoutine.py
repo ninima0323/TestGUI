@@ -55,7 +55,7 @@ class TaskRoutine:
             time.sleep(5.0)
 
         zblogger = ZigbeeLogger()
-        zblogger.log_init()
+        log_file_name = zblogger.log_init()
 
         # 1. Start connection with the device.
         # The connection of the device is ruled by SmartThings hub.
@@ -106,6 +106,7 @@ class TaskRoutine:
         # port.reset_output_buffer()
         # port.close()
         # # Problem:
+        return log_file_name
 
 def get_attr_element(cluster, command):
     attr_id = 0
@@ -134,6 +135,7 @@ class ZigbeeLogger:
         mylogger.addHandler(file_handler)
         mylogger.info("PROGRAM START")
         # mylogger.info("Time\t\tCLuster\t\tCommand\t\tpayload\t\tinterval\t\treturn value")
+        return log_name
 
     def get_command_log(self, task):
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
@@ -193,6 +195,8 @@ class ZigbeeLogger:
             command_string = "UNKNOWN COMMAND"
         mylogger.info("{};{};{};{};{};{}".format(
             timestamp, "COMMAND_TASK", cluster_string, command_string, payloads, task.duration))
+        return "{};{};{};{};{};{}".format(
+            timestamp, "COMMAND_TASK", cluster_string, command_string, payloads, task.duration)
 
     def get_read_attr_log(self, task, ret_val):
         timestamp = datetime.utcnow().strftime("%H:%M:%S.%f")[:-3]
@@ -239,6 +243,8 @@ class ZigbeeLogger:
                 attr_string = "COLOR_TEMP_MAX_MIRED"
         mylogger.info("{};{};{};{};{};{}".format(
                 timestamp, "READ_ATTRIBUTE_TASK", cluster_string, attr_string, task.duration, ret_val))
+        return "{};{};{};{};{};{}".format(
+                timestamp, "READ_ATTRIBUTE_TASK", cluster_string, attr_string, task.duration, ret_val)
     
     def get_write_attr_log(self, task):
         timestamp = datetime.utcnow().strftime("%H:%M:%S.%f")[:-3]
@@ -282,6 +288,8 @@ class ZigbeeLogger:
                 attr_string = "COLOR_TEMP_MAX_MIRED"
         mylogger.info("{};{};{};{};{}".format(
                 timestamp, "WRITE_ATTRIBUTE_TASK", cluster_string, attr_string, task.duration))
+        return "{};{};{};{};{}".format(
+                timestamp, "WRITE_ATTRIBUTE_TASK", cluster_string, attr_string, task.duration)
     
     def close_logfile(self):
         for handler in mylogger.handlers:

@@ -1,11 +1,8 @@
 {
 	"task_list": [
-		"resource\\command\\Zigbee\\on.json",
+		"resource\\command\\Zigbee\\onoff_random.json",
 		"resource\\command\\Zigbee\\color_cw.json",
-		"resource\\command\\Zigbee\\color_cw.json",
-		"resource\\command\\Zigbee\\level_10.json",
-		"resource\\command\\Zigbee\\level_10.json",
 		"resource\\command\\Zigbee\\level_10.json"
 	],
-	"iteration": 4
+	"iteration": 1
 }

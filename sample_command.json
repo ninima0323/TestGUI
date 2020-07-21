@@ -1,21 +1,24 @@
 {
 	"tasks": [
 		{
-			"task_kind": 1,
-			"cluster": 6,
-			"attr_id": 0,
+			"task_kind": 0,
+			"cluster": 8,
+			"command": 4,
+			"payloads": [
+				[
+					121,
+					32
+				],
+				[
+					0,
+					33
+				]
+			],
 			"duration": 0.51
 		},
 		{
-			"task_kind": 0,
-			"cluster": 6,
-			"command": 1,
-			"payloads": null,
-			"duration": 0.5
-		},
-		{
 			"task_kind": 1,
-			"cluster": 6,
+			"cluster": 8,
 			"attr_id": 0,
 			"duration": 0.51
 		},
@@ -24,7 +27,7 @@
 			"cluster": 6,
 			"command": 0,
 			"payloads": null,
-			"duration": 0.5
+			"duration": 0.51
 		},
 		{
 			"task_kind": 1,
