@@ -92,9 +92,7 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
             data = item.split(", ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
-                if command_type == "connect":
-                    print("connect")
-                elif command_type == "on/off":
+                if command_type == "on/off":
                     value = data[1]
                     if value == "on" or value == "0x01":  # on
                         commands.append("resource\\command\\Zigbee\\on.json")
@@ -102,20 +100,11 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                         commands.append("resource\\command\\Zigbee\\off.json")
                     elif value == "toggle":
                         commands.append("resource\\command\\Zigbee\\toggle.json")
-                    elif value == "regular random":
-                        commands.append("resource\\command\\Zigbee\\onoff_random.json")
-                    elif value == "irregular random":
-                        commands.append("resource\\command\\Zigbee\\onoff_random.json")
                     else:
                         commands.append("resource\\command\\Zigbee\\onoff_random.json")
                 elif command_type == "color":
                     value = data[1]
-                    if value == "regular random":
-                        commands.append("resource\\command\\Zigbee\\color_random.json")
-                    elif value == "irregular random":
-                        commands.append(
-                            "resource\\command\\Zigbee\\color_random.json")
-                    elif value == "random":
+                    if value == "random":
                         commands.append("resource\\command\\Zigbee\\color_random.json")
                     elif value == "cw":
                         commands.append("resource\\command\\Zigbee\\color_cw.json")
@@ -129,12 +118,7 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                         commands.append("resource\\command\\Zigbee\\color_ww.json")
                 elif command_type == "level":
                     value = data[1]
-                    if value == "regular random":
-                        commands.append("resource\\command\\Zigbee\\level_random.json")
-                    elif value == "irregular random":
-                        commands.append(
-                            "resource\\command\\Zigbee\\level_random.json")
-                    elif value == "random":
+                    if value == "random":
                         commands.append("resource\\command\\Zigbee\\level_random.json")
                     elif value == "10":
                         commands.append("resource\\command\\Zigbee\\level_10.json")
@@ -142,8 +126,6 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                         commands.append("resource\\command\\Zigbee\\level_50.json")
                     elif value == "100":
                         commands.append("resource\\command\\Zigbee\\level_100.json")
-                elif command_type == "disconnect":
-                    print("disconnect")
         file_data = OrderedDict()
         file_data["task_list"] = commands
         file_data["iteration"] = routine_count
@@ -157,9 +139,7 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
             data = item.split(", ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
-                if command_type == "connect":
-                    print("connect")
-                elif command_type == "on/off":
+                if command_type == "on/off":
                     value = data[1]
                     cluster = ON_OFF_CLUSTER
                     payloads = None
@@ -170,14 +150,6 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                         commands.append(get_zigbee_command(cluster, ON_OFF_OFF_CMD, payloads, duration, task_kind = COMMAND_TASK))
                     elif value == "toggle":  # toggle
                         commands.append(get_zigbee_command(cluster, ON_OFF_TOGGLE_CMD, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "regular random":
-                        command = 0x00
-                        payloads = 'random'
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "irregular random":
-                        command = 0x00
-                        payloads = 'random'
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                     else:
                         command = 0x00
                         payloads = 'random'
@@ -187,13 +159,7 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                     cluster = COLOR_CTRL_CLUSTER
                     command = 0x0a
                     duration = 0.51
-                    if value == "regular random":
-                        payloads = "random"
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "irregular random":
-                        payloads = "random"
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "random":
+                    if value == "random":
                         payloads = "random"
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                     else:
@@ -204,20 +170,12 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                     cluster = LVL_CTRL_CLUSTER
                     command = 0x04
                     duration = 0.51
-                    if value == "regular random":
-                        payloads = "random"
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "irregular random":
-                        payloads = "random"
-                        commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                    elif value == "random":
+                    if value == "random":
                         payloads = "random"
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                     else:
                         payloads = [[int(value), 0x20], [0, 0x21]]
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
-                elif command_type == "disconnect":
-                    print("disconnect")
                 elif command_type == "read attribute":
                     task_kind = 1
                     attribute = data[1]

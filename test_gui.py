@@ -16,28 +16,30 @@ import logging
 import serial
 from result_parser import *
 
-def serial_ports():   
+
+def serial_ports():
     """ Lists serial port names   
        
         :raises EnvironmentError:   
             On unsupported or unknown platforms   
         :returns:   
             A list of the serial ports available on the system   
-    """   
-    if sys.platform.startswith('win'):   
-        ports = ['COM%s' % (i + 1) for i in range(256)]   
-    else:   
-        raise EnvironmentError('Unsupported platform')   
-       
-    result = []   
-    for port in ports:   
-        try:   
-            s = serial.Serial(port)   
-            s.close()   
-            result.append(port)   
-        except (OSError, serial.SerialException):   
-            pass   
-    return result   
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+
 
 # UI파일 연결 - UI파일은 Python 코드 파일과 같은 디렉토리에 위치
 form_class = uic.loadUiType("mainwindow.ui")[0]
@@ -79,28 +81,29 @@ class Worker(QThread):
         while self.isRun:
             print(command_data)
             log_list = []
-            if self.module_type == 0:  # Zigbee_HA
-                zblogger = ZigbeeLogger()
-                zblogger.log_init()
-
-                if "iteration" in command_data:  # routine 의 경우
-                    iteration = command_data["iteration"]
-                elif "tasks" in command_data:  # routine 형식이 아닐 경우
-                    single_command_list = command_data["tasks"]
-                    task_list = parse_zigbee_task_list(single_command_list)
-                    name = self.device_name
-                    uuid = self.device_uuid
-                    addr = int(self.device_addr, 16)
-                    ep = self.device_ep
-                    device = Device(name, uuid, addr, ep)
-                    task_routine = TaskRoutine(device, 0, task_list, 1)
-                    task_routine.start_routine()
-                log_data = OrderedDict()
-                log_data["log_list"] = log_list
+            # if self.module_type == 0:  # Zigbee_HA
+                # zblogger = ZigbeeLogger()
+                # zblogger.log_init()
+                #
+                # if "iteration" in command_data:  # routine 의 경우
+                #     iteration = command_data["iteration"]
+                # elif "tasks" in command_data:  # routine 형식이 아닐 경우
+                #     single_command_list = command_data["tasks"]
+                #     task_list = parse_zigbee_task_list(single_command_list)
+                #     name = self.device_name
+                #     uuid = self.device_uuid
+                #     addr = int(self.device_addr, 16)
+                #     ep = self.device_ep
+                #     device = Device(name, uuid, addr, ep)
+                #     task_routine = TaskRoutine(device, 0, task_list, 1)
+                #     task_routine.start_routine()
+                # log_data = OrderedDict()
+                # log_data["log_list"] = log_list
 
             # 로그 다 찍고 표시 다 했을 경우 아래 처럼 쓰레드 종료
             self.isRun = False
             self.threadEvent.emit()
+
 
 def parse_zigbee_task_list(list):
     task_list = []
@@ -117,7 +120,7 @@ def parse_zigbee_task_list(list):
             else:
                 cmd_task = Cmd(cluster, command, payloads, duration)
                 task_list.append(cmd_task)
-            
+
         elif task_kind == READ_ATTRIBUTE_TASK:
             attr_id = parsed_task['attr_id']
             read_attr_task = ReadAttr(cluster, attr_id, duration)
@@ -128,12 +131,13 @@ def parse_zigbee_task_list(list):
             task_list.append(write_attr_task)
     return task_list
 
+
 def parse_zigbee_routine(device, list):
-    iteration   = list['iteration']
+    iteration = list['iteration']
     file_list = list['task_list']
     task_list = []
     duration = 0.51
-    for file_name in file_list:    
+    for file_name in file_list:
         if 'onoff_random' in file_name:
             random_task = Cmd.generate_random_random_cmd(ON_OFF_CLUSTER, duration)
             task_list.append(random_task)
@@ -143,10 +147,11 @@ def parse_zigbee_routine(device, list):
         elif 'color_random' in file_name:
             random_task = Cmd.generate_random_random_cmd(COLOR_CTRL_CLUSTER, duration)
             task_list.append(random_task)
-        else: 
+        else:
             task = parse_json_command(file_name)
             task_list.append(task)
     return TaskRoutine(device, 0, task_list, iteration)
+
 
 # Main화면을 띄우는데 사용되는 Class 선언
 class MainWindow(QMainWindow, form_class):
@@ -159,6 +164,7 @@ class MainWindow(QMainWindow, form_class):
         self.action_import_command.triggered.connect(self.import_command)
         self.action_export_device.triggered.connect(self.export_device)
         self.action_export_command.triggered.connect(self.export_command)
+        self.action_import_log_file.triggered.connect(self.import_log_file)
 
         # main window
         self.btn_more.clicked.connect(self.click_more)
@@ -169,7 +175,7 @@ class MainWindow(QMainWindow, form_class):
         self.cbo_module.currentIndexChanged.connect(self.module_changed)
         self.cbo_port.currentIndexChanged.connect(self.set_serial_port)
         self.cbo_port.clear()
-        self.cbo_port.addItems( serial_ports())
+        self.cbo_port.addItems(serial_ports())
         # for port in serial_ports():
         #     self.cbo_port.addItems()
         self.tabWidget.currentChanged.connect(self.changed_command_tab)
@@ -244,6 +250,24 @@ class MainWindow(QMainWindow, form_class):
         process_model.clear()
         result_model.clear()
 
+    def import_log_file(self):
+        file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
+        log_file_name = file_name[0]
+        if log_file_name and 'log' in log_file_name:
+            process_model.clear()
+            result_model.clear()
+            log_data = analyze_result(log_file_name)
+            for item in log_data:
+                item_string = str(item)
+                i = QStandardItem(item_string)
+                if item[-1] == "OK":
+                    i.setBackground(QColor('#7fc97f'))
+                    process_model.appendRow(i)
+                else:
+                    i.setBackground(QColor('#f0027f'))
+                    process_model.appendRow(i)
+            self.show_result()
+
     def import_command(self):
         file_name = QFileDialog.getOpenFileName(self, 'Open file', './')
         if file_name[0]:
@@ -316,15 +340,15 @@ class MainWindow(QMainWindow, form_class):
     def set_serial_port(self):
         global is_changed
         # if self.worker.isRun and not is_changed:
-            # QMessageBox.about(self, "시리얼 포트 설정 실패", "실험이 진행중이라 포트가 변경되지 않습니다.")
-            # with open('resource\\dongle_status.json', "r") as dongle_file:
-            #     dongle_config = json.load(dongle_file)
-            #     port = dongle_config['port']
-            #     is_changed = True
-            #     self.cbo_port.setCurrentIndex(int(port.split("COM")[1])-1)
-            #     dongle_file.close()
+        # QMessageBox.about(self, "시리얼 포트 설정 실패", "실험이 진행중이라 포트가 변경되지 않습니다.")
+        # with open('resource\\dongle_status.json', "r") as dongle_file:
+        #     dongle_config = json.load(dongle_file)
+        #     port = dongle_config['port']
+        #     is_changed = True
+        #     self.cbo_port.setCurrentIndex(int(port.split("COM")[1])-1)
+        #     dongle_file.close()
         # elif not self.worker.isRun:
-            # is_changed = False
+        # is_changed = False
         with open('resource\\dongle_status.json', "r") as dongle_file:
             dongle_config = json.load(dongle_file)
             status = dongle_config['status']
@@ -333,7 +357,6 @@ class MainWindow(QMainWindow, form_class):
             dongle_config['port'] = self.cbo_port.currentText()
             json.dump(dongle_config, dongle_file)
             dongle_file.close()
-    
 
     def module_changed(self):
         if self.cbo_module.currentIndex() == 0:
@@ -435,14 +458,10 @@ class MainWindow(QMainWindow, form_class):
                 self.add_command("read attribute, " + selected)
 
     def click_insert(self):
-        print("btn_insert Clicked")
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             command_type = self.tab_single.currentIndex()
-            if command_type == 0:  # connect
-                item = "connect"
-                self.add_command(item)
-            elif command_type == 1:  # on/off
+            if command_type == 1:  # on/off
                 onoff_input_type = self.cbo_input_onoff.currentIndex()
                 onoff_count = self.spinBox_onoff.value()
                 if onoff_input_type == 0:  # self input
@@ -457,14 +476,6 @@ class MainWindow(QMainWindow, form_class):
                         self.add_command(item, onoff_count)
                     else:
                         print("insert nothing")
-                elif onoff_input_type == 1:  # regular random
-                    for i in range(onoff_count):
-                        item = "on/off, regular random"
-                        self.add_command(item)
-                elif onoff_input_type == 2:  # irregular random
-                    for i in range(onoff_count):
-                        item = "on/off, irregular random" 
-                        self.add_command(item)
                 else:  # random
                     for i in range(onoff_count):
                         item = "on/off, random"
@@ -480,14 +491,6 @@ class MainWindow(QMainWindow, form_class):
                     elif temp.isdigit and temp != "":
                         item = "color, " + temp
                         self.add_command(item, color_count)
-                elif color_input_type == 1:  # regular random
-                    for i in range(color_count):
-                        item = "color, regular random" 
-                        self.add_command(item)
-                elif color_input_type == 2:  # irregular random
-                    for i in range(color_count):
-                        item = "color, irregular random"
-                        self.add_command(item)
                 else:  # random
                     for i in range(color_count):
                         item = "color, random"
@@ -503,21 +506,10 @@ class MainWindow(QMainWindow, form_class):
                     elif temp.isdigit and temp != "":
                         item = "level, " + temp
                         self.add_command(item, level_count)
-                elif level_input_type == 1:  # regular random
-                    for i in range(level_count):
-                        item = "level, regular random"
-                        self.add_command(item)
-                elif level_input_type == 2:  # irregular random
-                    for i in range(level_count):
-                        item = "level, irregular random"
-                        self.add_command(item)
-                else:
+                else:  # random
                     for i in range(level_count):
                         item = "level, random"
                         self.add_command(item)
-            else:  # disconnect
-                item = "disconnect"
-                self.add_command(item)
         # elif type == 1: #Zigbee 3.0
         # elif type == 2: #BLE
         # else: #UART
@@ -530,9 +522,6 @@ class MainWindow(QMainWindow, form_class):
 
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
-            order = self.cbo_routine.currentIndex()
-            item_connect = "connect"
-            item_disconnect = "disconnect"
             item_onoff = ""
             item_color = ""
             item_level = ""
@@ -552,14 +541,6 @@ class MainWindow(QMainWindow, form_class):
                         item_onoff = "on/off, toggle"
                     else:
                         print("insert nothing")
-                elif onoff_input_type == 1:  # regular random
-                    for i in range(onoff_routine_count):
-                        item_onoff = "on/off, regular random" 
-                        onoff_items.append(item_onoff)
-                elif onoff_input_type == 2:  # irregular random
-                    for i in range(onoff_routine_count):
-                        item_onoff = "on/off, irregular random" 
-                        onoff_items.append(item_onoff)
                 else:  # random
                     for i in range(onoff_routine_count):
                         item_onoff = "on/off, random"
@@ -571,15 +552,7 @@ class MainWindow(QMainWindow, form_class):
                 if color_input_type == 0:  # self input
                     temp = self.cbo_routine_color_value.currentText()
                     item_color = "color, " + temp
-                elif color_input_type == 1:  # regular random
-                    for i in range(color_routine_count):
-                        item_color = "color, regular random"
-                        color_items.append(item_color)
-                elif color_input_type == 2:  # irregular random
-                    for i in range(color_routine_count):
-                        item_color = "color, irregular random"
-                        color_items.append(item_color)
-                else:
+                else:  # random
                     for i in range(color_routine_count):
                         item_color = "color, random"
                         color_items.append(item_color)
@@ -590,141 +563,34 @@ class MainWindow(QMainWindow, form_class):
                 if level_input_type == 0:  # self input
                     temp = self.cbo_routine_level_value.currentText()
                     item_level = "level, " + temp
-                elif level_input_type == 1:  # regular random
-                    for i in range(level_routine_count):
-                        item_level = "level, regular random"
-                        level_items.append(item_level)
-                elif level_input_type == 2:  # irregular random
-                    for i in range(level_routine_count):
-                        item_level = "level, irregular random"
-                        level_items.append(item_level)
-                else:
+                else:  # random
                     for i in range(level_routine_count):
                         item_level = "level, random"
                         level_items.append(item_level)
 
             self.add_command("routine, " + str(self.spinBox_routine.value()))
-            self.add_command(item_connect)
-            if order == 0:  # connect-onoff-color-level-disconnect
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-            elif order == 1:  # connect-onoff-level-color-disconnect
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-            elif order == 2:  # connect-color-onoff-level-disconnect
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-            elif order == 3:  # connect-level-onoff-color-disconnect
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-            elif order == 4:  # connect-color-level-onoff-disconnect
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-            else:  # connect-level-color-onoff-disconnect
-                if item_level != "":
-                    if level_items:
-                        for item in level_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_level, level_routine_count)
-                if item_color != "":
-                    if color_items:
-                        for item in color_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_color, color_routine_count)
-                if item_onoff != "":
-                    if onoff_items:
-                        for item in onoff_items:
-                            self.add_command(item)
-                    else:
-                        self.add_command(item_onoff, onoff_routine_count)
-            self.add_command(item_disconnect)
+            if item_onoff != "":
+                if onoff_items:
+                    for item in onoff_items:
+                        self.add_command(item)
+                else:
+                    self.add_command(item_onoff, onoff_routine_count)
+            if item_color != "":
+                if color_items:
+                    for item in color_items:
+                        self.add_command(item)
+                else:
+                    self.add_command(item_color, color_routine_count)
+            if item_level != "":
+                if level_items:
+                    for item in level_items:
+                        self.add_command(item)
+                else:
+                    self.add_command(item_level, level_routine_count)
 
-        # elif module_type == 1: #Zigbee 3.0
-        # elif module_type == 2: #BLE
-        # else: #UART
-
+    # elif module_type == 1: #Zigbee 3.0
+    # elif module_type == 2: #BLE
+    # else: #UART
     def click_more(self):
         print("more clicked")
         # if self.worker.isRun:
@@ -754,64 +620,65 @@ class MainWindow(QMainWindow, form_class):
             # if self.worker.isRun:
             #     QMessageBox.about(self, "실험 시작 실패", "이미 진행중인 실험이 있습니다.")
             # else:
-                global command_data
-                process_model.clear()
-                result_model.clear()
-                list = []
-                for index in range(command_model.rowCount()):
-                    item = command_model.item(index).text()
-                    list.append(item)
-                first_item = list[0].split(", ")
-                global log_file_name, log_data
-                if first_item[0] == "routine":
-                    json_type_command = make_command(list, module_type, int(first_item[1]))
-                    command_data = json_type_command
-                    device = Device(name, uuid, int(addr, 16), int(ep))
-                    task_routine = parse_zigbee_routine(device, command_data)
-                    log_file_name = task_routine.start_routine()
-                    if log_file_name != "":
-                        process_model.clear()
-                        result_model.clear()
-                        log_data = analyze_result(log_file_name)
-                        for item in log_data:
-                                item_string = str(item)
-                                i = QStandardItem(item_string)
-                                if item[-1] == "OK":
-                                    i.setBackground(QColor('#7fc97f'))
-                                    process_model.appendRow(i)
-                                else:
-                                    i.setBackground(QColor('#f0027f'))
-                                    process_model.appendRow(i)        
-                        self.show_result()
-                else:
-                    json_type_command = make_command(list, module_type)
-                    command_data = json_type_command
-                   
-                    task_list =  parse_zigbee_task_list(command_data["tasks"])
-                    device = Device(name, uuid, int(addr, 16), int(ep))
-                    task_routine = TaskRoutine(device, 0, task_list, 1)
-                    log_file_name = task_routine.start_routine()
-                    if log_file_name != "":
-                        process_model.clear()
-                        result_model.clear()
-                        log_data = analyze_result(log_file_name)
-                        for item in log_data:
-                                item_string = str(item)
-                                i = QStandardItem(item_string)
-                                if item[-1] == "OK":
-                                    i.setBackground(QColor('#7fc97f'))
-                                    process_model.appendRow(i)
-                                else:
-                                    i.setBackground(QColor('#f0027f'))
-                                    process_model.appendRow(i)        
-                        self.show_result()
-                # self.worker.device_addr =addr
-                # self.worker.device_uuid = uuid
-                # self.worker.device_name = name
-                # self.worker.ep = int(ep) 
-                # self.worker.module_type = module_type
-                # self.worker.isRun = True
-                # self.worker.start()
+            global command_data
+            process_model.clear()
+            result_model.clear()
+            list = []
+            for index in range(command_model.rowCount()):
+                item = command_model.item(index).text()
+                list.append(item)
+            first_item = list[0].split(", ")
+            global log_file_name, log_data
+            if first_item[0] == "routine":
+                json_type_command = make_command(list, module_type, int(first_item[1]))
+                command_data = json_type_command
+                device = Device(name, uuid, int(addr, 16), int(ep))
+                task_routine = parse_zigbee_routine(device, command_data)
+                log_file_name = task_routine.start_routine()
+                if log_file_name != "":
+                    process_model.clear()
+                    result_model.clear()
+                    log_data = analyze_result(log_file_name)
+                    for item in log_data:
+                        item_string = str(item)
+                        i = QStandardItem(item_string)
+                        if item[-1] == "OK":
+                            i.setBackground(QColor('#7fc97f'))
+                            process_model.appendRow(i)
+                        else:
+                            i.setBackground(QColor('#f0027f'))
+                            process_model.appendRow(i)
+                    self.show_result()
+            else:
+                json_type_command = make_command(list, module_type)
+                command_data = json_type_command
+
+                task_list = parse_zigbee_task_list(command_data["tasks"])
+                device = Device(name, uuid, int(addr, 16), int(ep))
+                task_routine = TaskRoutine(device, 0, task_list, 1)
+                log_file_name = task_routine.start_routine()
+                if log_file_name != "":
+                    process_model.clear()
+                    result_model.clear()
+                    log_data = analyze_result(log_file_name)
+                    for item in log_data:
+                        item_string = str(item)
+                        i = QStandardItem(item_string)
+                        if item[-1] == "OK":
+                            i.setBackground(QColor('#7fc97f'))
+                            process_model.appendRow(i)
+                        else:
+                            i.setBackground(QColor('#f0027f'))
+                            process_model.appendRow(i)
+                    self.show_result()
+
+            # self.worker.device_addr =addr
+            # self.worker.device_uuid = uuid
+            # self.worker.device_name = name
+            # self.worker.ep = int(ep)
+            # self.worker.module_type = module_type
+            # self.worker.isRun = True
+            # self.worker.start()
         elif count == 0:
             QMessageBox.about(self, "실험 시작 실패", "커맨드가 입력되지 않았습니다.")
         else:
@@ -840,14 +707,14 @@ class ResultWindow(QMainWindow):
         self.btn_save.clicked.connect(self.click_save)
         self.btn_print.clicked.connect(self.click_print)
 
-        
         if log_data != []:
             table_model = QStandardItemModel()
             self.tableView.setModel(table_model)
             self.tableView.setColumnWidth(8, 320)
             self.tableView.setRowHeight(len(log_data) - 1, 20)
-            table_model.setHorizontalHeaderLabels(['Timestamp', 'Task kind', 'Cluster', 'Command', 'Payload','Duration',
-                                               'Return value', 'Result'])
+            table_model.setHorizontalHeaderLabels(
+                ['Timestamp', 'Task kind', 'Cluster', 'Command', 'Payload', 'Duration',
+                 'Return value', 'Result'])
             for item in log_data:
                 print(item)
                 timestamp = item[0]
@@ -859,16 +726,16 @@ class ResultWindow(QMainWindow):
                     duration = item[5]
                     result = item[6]
                     table_model.appendRow([QStandardItem(timestamp), QStandardItem(task_kind), QStandardItem(cluster),
-                                       QStandardItem(command), QStandardItem(payloads), QStandardItem(duration),
-                                       QStandardItem(""), QStandardItem(result)])
+                                           QStandardItem(command), QStandardItem(payloads), QStandardItem(duration),
+                                           QStandardItem(""), QStandardItem(result)])
                 elif task_kind == READ_ATTRIBUTE_TASK:
                     duration = item[4]
                     return_val = item[5]
                     result = item[6]
                     table_model.appendRow([QStandardItem(timestamp), QStandardItem(task_kind), QStandardItem(cluster),
-                                       QStandardItem(command), QStandardItem(""), QStandardItem(duration),
-                                       QStandardItem(return_val), QStandardItem(result)])
-                
+                                           QStandardItem(command), QStandardItem(""), QStandardItem(duration),
+                                           QStandardItem(return_val), QStandardItem(result)])
+
         self.show()
 
     def click_save(self):
