@@ -325,7 +325,25 @@ class MainWindow(QMainWindow, form_class):
 
     def add_command(self, command_string, count=1):
         for i in range(count):
-            command_model.appendRow(QStandardItem(command_string))
+            duration = 0.51
+            if command_string == "on/off, random":
+                random_task = random.randint(0x00, 0x02)
+                if random_task == 0x00:
+                    command_model.appendRow(QStandardItem("on/off, on"))
+                elif random_task == 0x01:
+                    command_model.appendRow(QStandardItem("on/off, off"))
+                else:
+                    command_model.appendRow(QStandardItem("on/off, toggle"))
+            elif command_string == "level, random":
+                random_task = Cmd.generate_random_random_cmd(LVL_CTRL_CLUSTER, duration)
+                value = random_task.payloads[0][0]
+                command_model.appendRow(QStandardItem("level, "+str(value)))
+            elif command_string == "color, random":
+                random_task = Cmd.generate_random_random_cmd(COLOR_CTRL_CLUSTER, duration)
+                value = random_task.payloads[0][0]
+                command_model.appendRow(QStandardItem("color, "+str(value)))
+            else:
+                command_model.appendRow(QStandardItem(command_string))
 
     def changed_command_tab(self):
         tab_now = self.tabWidget.currentIndex()
@@ -461,7 +479,7 @@ class MainWindow(QMainWindow, form_class):
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             command_type = self.tab_single.currentIndex()
-            if command_type == 1:  # on/off
+            if command_type == 0:  # on/off
                 onoff_input_type = self.cbo_input_onoff.currentIndex()
                 onoff_count = self.spinBox_onoff.value()
                 if onoff_input_type == 0:  # self input
@@ -480,7 +498,7 @@ class MainWindow(QMainWindow, form_class):
                     for i in range(onoff_count):
                         item = "on/off, random"
                         self.add_command(item)
-            elif command_type == 2:  # color
+            elif command_type == 1:  # color
                 color_input_type = self.cbo_input_color.currentIndex()
                 color_count = self.spinBox_color.value()
                 if color_input_type == 0:  # self input
@@ -495,7 +513,7 @@ class MainWindow(QMainWindow, form_class):
                     for i in range(color_count):
                         item = "color, random"
                         self.add_command(item)
-            elif command_type == 3:  # level
+            else:  # level
                 level_input_type = self.cbo_input_level.currentIndex()
                 level_count = self.spinBox_level.value()
                 if level_input_type == 0:  # self input
