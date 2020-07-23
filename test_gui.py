@@ -315,7 +315,7 @@ class MainWindow(QMainWindow, form_class):
             for index in range(command_model.rowCount()):
                 item = command_model.item(index).text()
                 list.append(item)
-            first_item = list[0].split(", ")
+            first_item = list[0].split(" , ")
             if first_item[0] == "routine":
                 make_command(list, self.cbo_module.currentIndex(), int(first_item[1]), True)
             else:
@@ -324,24 +324,28 @@ class MainWindow(QMainWindow, form_class):
             QMessageBox.about(self, "명령 파일 생성 실패", "명령이 입력되지 않았습니다.")
 
     def add_command(self, command_string, count=1):
-        for i in range(count):
-            duration = 0.51
-            if command_string == "on/off, random":
+        for i in range(count):               
+            if "on/off , random" in command_string:
+                duration = command_string.split(", ")[2]
                 random_task = random.randint(0x00, 0x02)
                 if random_task == 0x00:
-                    command_model.appendRow(QStandardItem("on/off, on"))
+                    command_model.appendRow(QStandardItem("on/off , on , "+duration))
                 elif random_task == 0x01:
-                    command_model.appendRow(QStandardItem("on/off, off"))
+                    command_model.appendRow(QStandardItem("on/off , off , "+duration))
                 else:
-                    command_model.appendRow(QStandardItem("on/off, toggle"))
-            elif command_string == "level, random":
+                    command_model.appendRow(QStandardItem("on/off , toggle , "+duration))
+            elif "level , random" in command_string:
+                duration = command_string.split(" , ")[2]
                 random_task = Cmd.generate_random_random_cmd(LVL_CTRL_CLUSTER, duration)
-                value = random_task.payloads[0][0]
-                command_model.appendRow(QStandardItem("level, "+str(value)))
-            elif command_string == "color, random":
+                value = random_task.payloads
+                command = str(random_task.command)
+                command_model.appendRow(QStandardItem("level , "+str(value)+" , "+duration+" , "+command))
+            elif "color , random" in command_string:
+                duration = command_string.split(" , ")[2]
                 random_task = Cmd.generate_random_random_cmd(COLOR_CTRL_CLUSTER, duration)
-                value = random_task.payloads[0][0]
-                command_model.appendRow(QStandardItem("color, "+str(value)))
+                value = random_task.payloads
+                command = str(random_task.command)
+                command_model.appendRow(QStandardItem("color , "+str(value)+" , "+duration+" , "+command))
             else:
                 command_model.appendRow(QStandardItem(command_string))
 
@@ -482,51 +486,54 @@ class MainWindow(QMainWindow, form_class):
             if command_type == 0:  # on/off
                 onoff_input_type = self.cbo_input_onoff.currentIndex()
                 onoff_count = self.spinBox_onoff.value()
+                duration = self.lineEdit_onoff_duration.text()
                 if onoff_input_type == 0:  # self input
                     if self.rdo_on.isChecked():
-                        item = "on/off, on"
+                        item = "on/off , on , " + duration
                         self.add_command(item, onoff_count)
                     elif self.rdo_off.isChecked():
-                        item = "on/off, off"
+                        item = "on/off , off , " + duration
                         self.add_command(item, onoff_count)
                     elif self.rdo_toggle.isChecked():
-                        item = "on/off, toggle"
+                        item = "on/off , toggle , " + duration
                         self.add_command(item, onoff_count)
                     else:
                         print("insert nothing")
                 else:  # random
                     for i in range(onoff_count):
-                        item = "on/off, random"
+                        item = "on/off , random , " + duration
                         self.add_command(item)
             elif command_type == 1:  # color
                 color_input_type = self.cbo_input_color.currentIndex()
                 color_count = self.spinBox_color.value()
+                duration = self.lineEdit_color_duration.text()
                 if color_input_type == 0:  # self input
                     temp = self.lineEdit_color.text()
                     if "0x" in temp:
-                        item = "color, " + str(int(temp, 0))
+                        item = "color , " + str(int(temp, 0)) + " , " + duration
                         self.add_command(item, color_count)
                     elif temp.isdigit and temp != "":
-                        item = "color, " + temp
+                        item = "color , " + temp + " , " + duration
                         self.add_command(item, color_count)
                 else:  # random
                     for i in range(color_count):
-                        item = "color, random"
+                        item = "color , random , " + duration
                         self.add_command(item)
             else:  # level
                 level_input_type = self.cbo_input_level.currentIndex()
                 level_count = self.spinBox_level.value()
+                duration = self.lineEdit_level_duration.text()
                 if level_input_type == 0:  # self input
                     temp = self.lineEdit_level.text()
                     if "0x" in temp:
-                        item = "level, " + str(int(temp, 0))
+                        item = "level , " + str(int(temp, 0)) + " , " + duration
                         self.add_command(item, level_count)
                     elif temp.isdigit and temp != "":
-                        item = "level, " + temp
+                        item = "level , " + temp + " , " + duration
                         self.add_command(item, level_count)
                 else:  # random
                     for i in range(level_count):
-                        item = "level, random"
+                        item = "level , random , " + duration
                         self.add_command(item)
         # elif type == 1: #Zigbee 3.0
         # elif type == 2: #BLE
@@ -549,41 +556,44 @@ class MainWindow(QMainWindow, form_class):
 
             onoff_input_type = self.cbo_input_onoff_routine.currentIndex()
             onoff_routine_count = self.spinBox_onoff_routine.value()
+            duration_onoff = self.lineEdit_onoff_duration_routine.text()
             if onoff_routine_count != 0:
                 if onoff_input_type == 0:  # self input
                     if self.rdo_on_routine.isChecked():
-                        item_onoff = "on/off, on"
+                        item_onoff = "on/off , on"
                     elif self.rdo_off_routine.isChecked():
-                        item_onoff = "on/off, off"
+                        item_onoff = "on/off , off"
                     elif self.rdo_toggle_routine.isChecked():
-                        item_onoff = "on/off, toggle"
+                        item_onoff = "on/off , toggle"
                     else:
                         print("insert nothing")
                 else:  # random
                     for i in range(onoff_routine_count):
-                        item_onoff = "on/off, random"
+                        item_onoff = "on/off , random"
                         onoff_items.append(item_onoff)
 
             color_input_type = self.cbo_input_color_routine.currentIndex()
             color_routine_count = self.spinBox_color_routine.value()
+            duration_color = self.lineEdit_color_duration_routine.text()
             if color_routine_count != 0:
                 if color_input_type == 0:  # self input
                     temp = self.cbo_routine_color_value.currentText()
-                    item_color = "color, " + temp
+                    item_color = "color , " + temp
                 else:  # random
                     for i in range(color_routine_count):
-                        item_color = "color, random"
+                        item_color = "color , random"
                         color_items.append(item_color)
 
             level_input_type = self.cbo_input_color_routine.currentIndex()
             level_routine_count = self.spinBox_level_routine.value()
+            duration_level = self.lineEdit_level_duration_routine.text()
             if level_routine_count != 0:
                 if level_input_type == 0:  # self input
                     temp = self.cbo_routine_level_value.currentText()
-                    item_level = "level, " + temp
+                    item_level = "level , " + temp
                 else:  # random
                     for i in range(level_routine_count):
-                        item_level = "level, random"
+                        item_level = "level , random"
                         level_items.append(item_level)
 
             self.add_command("routine, " + str(self.spinBox_routine.value()))
@@ -645,7 +655,7 @@ class MainWindow(QMainWindow, form_class):
             for index in range(command_model.rowCount()):
                 item = command_model.item(index).text()
                 list.append(item)
-            first_item = list[0].split(", ")
+            first_item = list[0].split(" , ")
             global log_file_name, log_data
             if first_item[0] == "routine":
                 json_type_command = make_command(list, module_type, int(first_item[1]))

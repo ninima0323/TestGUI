@@ -1,4 +1,5 @@
 import json
+import ast
 from collections import OrderedDict
 from DongleHandler.constants import *
 
@@ -48,39 +49,42 @@ def read_command_from_json(file_name, module_index):
         list = []
         if module_index == 0:  # Zigbee HA
             if "iteration" in json_data:  # routine 의 경우
-                list.append("routine, " + str(json_data["iteration"]))
+                list.append("routine , " + str(json_data["iteration"]))
                 for item in json_data["task_list"]:
                     command_type = item.split("\\")[-1].split("_")
                     if command_type[0] == "on.json" or command_type[0] == "off.json":
-                        list.append("on/off, " + command_type[0].split(".")[0])
+                        list.append("on/off , " + command_type[0].split(".")[0])
                     else:
-                        list.append(command_type[0] + ", " + command_type[-1].split(".")[0])
+                        list.append(command_type[0] + " , " + command_type[-1].split(".")[0])
             elif "tasks" in json_data:  # single command 의 경우
                 for item in json_data["tasks"]:
                     task_kind = item["task_kind"]
                     cluster = item["cluster"]
+                    duration = item["duration"]
                     command_string = ""
                     if cluster == ON_OFF_CLUSTER:
                         if task_kind == 0:
                             command = item["command"]
-                            command_string = "on/off, " + str(command)
+                            command_string = "on/off , " + str(command) + " , " + duration
                         else:
                             attr_id = item["attr_id"]
-                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                            command_string = "read attribute , " + zigbee_attr_to_str[cluster][attr_id]
                     elif cluster == COLOR_CTRL_CLUSTER:
                         if task_kind == 0:
+                            command = item["command"]
                             payloads = item["payloads"]
-                            command_string = "color, " + str(payloads[0][0])
+                            command_string = "color , " + str(payloads) + " , " + duration + " , " + str(command)
                         else:
                             attr_id = item["attr_id"]
-                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                            command_string = "read attribute , " + zigbee_attr_to_str[cluster][attr_id]
                     elif cluster == LVL_CTRL_CLUSTER:
                         if task_kind == 0:
+                            command = item["command"]
                             payloads = item["payloads"]
-                            command_string = "level, " + str(payloads[0][0])
+                            command_string = "level , " + str(payloads)  + " , " + duration + " , " + str(command)
                         else:
                             attr_id = item["attr_id"]
-                            command_string = "read attribute, " + zigbee_attr_to_str[cluster][attr_id]
+                            command_string = "read attribute , " + zigbee_attr_to_str[cluster][attr_id]
                     list.append(command_string)
         return list
 
@@ -89,7 +93,7 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
     if routine_count > 0:  # routine 의 경우
         commands = []
         for item in list:
-            data = item.split(", ")
+            data = item.split(" , ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
                 if command_type == "on/off":
@@ -136,14 +140,14 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
     else:  # single command 와 read attribute의 경우
         commands = []
         for item in list:
-            data = item.split(", ")
+            data = item.split(" , ")
             command_type = data[0]
             if module_index == 0:  # Zigbee HA
                 if command_type == "on/off":
                     value = data[1]
                     cluster = ON_OFF_CLUSTER
                     payloads = None
-                    duration = 0.51
+                    duration = float(data[2])
                     if value == "on" or value == "0x01" or value == "1":  # on
                         commands.append(get_zigbee_command(cluster, ON_OFF_ON_CMD, payloads, duration, task_kind = COMMAND_TASK))
                     elif value == "off" or value == "0x00" or value == "0":  # off
@@ -158,23 +162,25 @@ def make_command(list, module_index, routine_count=-1, make_file=False):
                     value = data[1]
                     cluster = COLOR_CTRL_CLUSTER
                     command = 0x0a
-                    duration = 0.51
-                    if value == "random":
-                        payloads = "random"
+                    duration = data[2]
+                    if "[" not in item:
+                        payloads = [[int(value), 0x21], [0, 0x21]]
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                     else:
-                        payloads = [[int(value), 0x21], [0, 0x21]]
+                        command = int(data[3], 16)
+                        payloads = ast.literal_eval(value)
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                 elif command_type == "level":
                     value = data[1]
                     cluster = LVL_CTRL_CLUSTER
                     command = 0x04
-                    duration = 0.51
-                    if value == "random":
-                        payloads = "random"
+                    duration = data[2]
+                    if "[" not in item:
+                        payloads = [[int(value), 0x20], [0, 0x21]]
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                     else:
-                        payloads = [[int(value), 0x20], [0, 0x21]]
+                        command = int(data[3], 16)
+                        payloads = ast.literal_eval(value)
                         commands.append(get_zigbee_command(cluster, command, payloads, duration, task_kind = COMMAND_TASK))
                 elif command_type == "read attribute":
                     task_kind = 1
