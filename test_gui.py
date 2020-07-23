@@ -16,6 +16,9 @@ import logging
 import serial
 from result_parser import *
 
+GUIlogger = logging.getLogger("GUI")
+GUIlogger.setLevel(logging.DEBUG)
+
 def serial_ports():   
     """ Lists serial port names   
        
@@ -523,7 +526,8 @@ class MainWindow(QMainWindow, form_class):
         # else: #UART
 
     def click_insert_routine(self):
-        print("btn_insert_routine Clicked")
+        GUIlogger.debug("click_insert_routine:btn_insert_routine Clicked")
+        # print("btn_insert_routine Clicked")
         command_model.clear()
         process_model.clear()
         result_model.clear()
@@ -726,7 +730,8 @@ class MainWindow(QMainWindow, form_class):
         # else: #UART
 
     def click_more(self):
-        print("more clicked")
+        GUIlogger.debug("click_more:more clicked")
+        # print("more clicked")
         # if self.worker.isRun:
         #     QMessageBox.about(self, "더보기 실패", "실험이 진행중이라, 결과 저장이 불가능합니다.")
         # elif not log_data:
