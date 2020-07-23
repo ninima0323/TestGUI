@@ -748,6 +748,7 @@ class MainWindow(QMainWindow, form_class):
             save_result()
 
     def click_start(self):
+        GUIlogger.debug("click_start:started")
         # 명령 보내기
         name = self.lineEdit_device_name.text()
         uuid = self.lineEdit_device_uuid.text()
@@ -916,6 +917,7 @@ def save_result():
                 result = item[6]
                 write_ws.append([timestamp, task_kind, cluster, command, "", duration, return_val, result])
         write_wb.save('test.xlsx')
+    GUIlogger.debug("save_result: result saved.")
 
 
 if __name__ == "__main__":
