@@ -16,6 +16,9 @@ import logging
 import serial
 from result_parser import *
 
+# GUI logger
+logging.basicConfig(level=logging.DEBUG)
+
 GUIlogger = logging.getLogger("GUI")
 GUIlogger.setLevel(logging.DEBUG)
 
@@ -430,15 +433,19 @@ class MainWindow(QMainWindow, form_class):
         else:
             self.cbo_routine_level_value.hide()
 
+    # TODO: add automated attribute reader for each command
     def click_read_attribute(self):
+        GUIlogger.debug("btn_insert for read_attribute clicked.")
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             selected = attribute_model.itemData(self.treeView.selectedIndexes()[0])[0]
             if selected not in ["on/off", "color", "level"]:
+                GUI
                 self.add_command("read attribute, " + selected)
 
+    # TODO: add automated attribute reader for each command
     def click_insert(self):
-        print("btn_insert Clicked")
+        GUIlogger.debug("btn_insert for command clicked.")
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             command_type = self.tab_single.currentIndex()
@@ -472,6 +479,7 @@ class MainWindow(QMainWindow, form_class):
                     for i in range(onoff_count):
                         item = "on/off, random"
                         self.add_command(item)
+                
             elif command_type == 2:  # color
                 color_input_type = self.cbo_input_color.currentIndex()
                 color_count = self.spinBox_color.value()
