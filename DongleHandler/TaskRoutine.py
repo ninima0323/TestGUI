@@ -80,6 +80,7 @@ class TaskRoutine:
                             cmd_id=task.command,
                             payload=task.payloads)
                     time.sleep(task.duration)
+                    # TODO: remove temporary attribute reader code
                     attr_id, attr_type = get_attr_element(task.cluster, task.command)
                     param_attr = Attribute(task.cluster, attr_id, attr_type)
                     returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
@@ -87,10 +88,12 @@ class TaskRoutine:
                 elif task.task_kind == READ_ATTRIBUTE_TASK:
                     param_attr = Attribute(task.cluster, task.attr_id, task.attr_type)
                     returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
+                    time.sleep(task.duration)
                     zblogger.get_read_attr_log(task, returned_attr.value)
                 elif task.task_kind == WRITE_ATTRIBUTE_TASK:
                     param_attr = Attribute(task.cluster, task.attr_id, task.attr_type)
                     cli_instance.zcl.writeattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
+                    time.sleep(task.duration)
                     returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
                     zblogger.get_read_attr_log(task, returned_attr.value)
                 

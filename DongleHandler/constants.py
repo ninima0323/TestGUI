@@ -69,8 +69,8 @@ ON_OFF_ONOFF_ATTR             = 0x0000
 
 LVL_CTRL_CURR_LVL_ATTR        = 0x0000
 LVL_CTRL_REMAIN_TIME_ATTR     = 0X0001      # added by @hipiphock
-LVL_CTRL_ONOFF_TRANS_TIME_ATTR= 0x0010      # added by @hipiphock
-LVL_CTRL_ON_LEVEL_ATTR        = 0X0011      # added by @hipiphock
+# LVL_CTRL_ONOFF_TRANS_TIME_ATTR= 0x0010      # added by @hipiphock
+# LVL_CTRL_ON_LEVEL_ATTR        = 0X0011      # added by @hipiphock
 
 DOOR_LOCK_LOCK_STATE          = 0x0000
 
