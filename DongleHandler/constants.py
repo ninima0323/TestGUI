@@ -121,9 +121,9 @@ LVL_CTRL_STOP_ONOFF_CMD           = 0X07    # added by @hipiphock
 DOOR_LOCK_LOCK_DOOR_CMD           = 0x00
 DOOR_LOCK_UNLOCK_DOOR_CMD         = 0x01
 
-COLOR_CTRL_MV_TO_HUE_CMD          = 0x00
-COLOR_CTRL_MV_TO_SAT_CMD          = 0x03
-COLOR_CTRL_MV_TO_HUE_SAT_CMD      = 0x06
+# COLOR_CTRL_MV_TO_HUE_CMD          = 0x00
+# COLOR_CTRL_MV_TO_SAT_CMD          = 0x03
+# COLOR_CTRL_MV_TO_HUE_SAT_CMD      = 0x06
 COLOR_CTRL_MV_TO_COLOR_CMD        = 0X07    # added by @hipiphock
 COLOR_CTRL_MOVE_COLOR_CMD         = 0X08    # added by @hipiphock
 COLOR_CTRL_STEP_COLOR_CMD         = 0X09    # added by @hipiphock
@@ -155,19 +155,19 @@ ZCL_RAW_FORMAT_STR = "{frame_ctrl:02X}{seq_num:02X}{cmd_id:02X}{payload}"
 
 
 class TYPES:
-    BOOL = 0x10
-    UINT8 = 0x20
-    UINT16 = 0x21
-    UINT32 = 0x23
-    UINT64 = 0x27
-    SINT8 = 0x28
-    SINT16 = 0x29
-    SINT64 = 0x2f
-    ENUM8 = 0x30
-    MAP8 = 0x18
-    MAP16 = 0x19
-    EUI64 = 0xF0
-    STRING = 0x42
+    BOOL    = 0x10
+    UINT8   = 0x20
+    UINT16  = 0x21
+    UINT32  = 0x23
+    UINT64  = 0x27
+    SINT8   = 0x28
+    SINT16  = 0x29
+    SINT64  = 0x2f
+    ENUM8   = 0x30
+    MAP8    = 0x18
+    MAP16   = 0x19
+    EUI64   = 0xF0
+    STRING  = 0x42
 
 
 class ZCLDirection(Enum):
@@ -192,6 +192,6 @@ DOOR_LOCK_CLOSE = 0
 ZIGBEE_CONNECTION           = 0
 BLE_CONNECTION              = 1
 
-COMMAND_TASK                = 0       # added by @hipiphock
+COMMAND_TASK                = 0      # added by @hipiphock
 READ_ATTRIBUTE_TASK         = 1      # added by @hipiphock
 WRITE_ATTRIBUTE_TASK        = 2      # added by @hipiphock
