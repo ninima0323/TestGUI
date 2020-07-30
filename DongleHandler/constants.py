@@ -162,6 +162,7 @@ class TYPES:
     UINT64  = 0x27
     SINT8   = 0x28
     SINT16  = 0x29
+    SINT32  = 0x2b
     SINT64  = 0x2f
     ENUM8   = 0x30
     MAP8    = 0x18
