@@ -13,7 +13,6 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
 # added for clear path
 # TODO: need to clean path problem
 
@@ -30,7 +29,11 @@ class TaskRoutine:
     # 2. Sending/Receiving with the dongle and the device.
     # 3. Disbanding the device from Zigbee 
     def start_routine(self):
-        
+
+        # initialize logger before routine
+        zblogger = ZigbeeLogger()
+        log_file_name = zblogger.log_init()
+
         # Before connecting the device with the dongle,
         # the dongle must join the hub's network.
         # TODO: implement automated port selector
@@ -53,9 +56,6 @@ class TaskRoutine:
             print("The dongle has started commissioning.")
             print("Please search for the dongle via SmartThings App within 5 seconds.")
             time.sleep(5.0)
-
-        zblogger = ZigbeeLogger()
-        log_file_name = zblogger.log_init()
 
         # 1. Start connection with the device.
         # The connection of the device is ruled by SmartThings hub.
@@ -80,17 +80,20 @@ class TaskRoutine:
                             cmd_id=task.command,
                             payload=task.payloads)
                     time.sleep(task.duration)
-                    attr_id, attr_type = get_attr_element(task.cluster, task.command)
-                    param_attr = Attribute(task.cluster, attr_id, attr_type)
-                    returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
+                    # TODO: remove temporary attribute reader code
+                    # attr_id, attr_type = get_attr_element(task.cluster, task.command)
+                    # param_attr = Attribute(task.cluster, attr_id, attr_type)
+                    # returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
                     zblogger.get_command_log(task)
                 elif task.task_kind == READ_ATTRIBUTE_TASK:
                     param_attr = Attribute(task.cluster, task.attr_id, task.attr_type)
                     returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
+                    time.sleep(task.duration)
                     zblogger.get_read_attr_log(task, returned_attr.value)
                 elif task.task_kind == WRITE_ATTRIBUTE_TASK:
                     param_attr = Attribute(task.cluster, task.attr_id, task.attr_type)
                     cli_instance.zcl.writeattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
+                    time.sleep(task.duration)
                     returned_attr = cli_instance.zcl.readattr(self.device.addr, param_attr, ep=ULTRA_THIN_WAFER_ENDPOINT)
                     zblogger.get_read_attr_log(task, returned_attr.value)
                 
@@ -106,6 +109,7 @@ class TaskRoutine:
         # port.reset_output_buffer()
         # port.close()
         # # Problem:
+        mylogger.debug("PROGRAM FiNISHED")
         return log_file_name
 
 def get_attr_element(cluster, command):
@@ -124,7 +128,7 @@ def get_attr_element(cluster, command):
 
 # Zigbee Logger
 mylogger = logging.getLogger("ZB")
-mylogger.setLevel(logging.INFO)
+mylogger.setLevel(logging.DEBUG)
 
 # TODO: need to remake logger for attribute tasks
 class ZigbeeLogger:
@@ -133,8 +137,7 @@ class ZigbeeLogger:
         log_name = "logs\\" + timestring + ".log"
         file_handler = logging.FileHandler(log_name)
         mylogger.addHandler(file_handler)
-        mylogger.info("PROGRAM START")
-        # mylogger.info("Time\t\tCLuster\t\tCommand\t\tpayload\t\tinterval\t\treturn value")
+        mylogger.debug("PROGRAM START")
         return log_name
 
     def get_command_log(self, task):

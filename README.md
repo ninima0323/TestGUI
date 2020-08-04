@@ -108,4 +108,4 @@ would be required to be set.
 
 # Future Goals & TODO lists
  * Unifying BLE CLI and Zigbee CLI.
- * Implementing the GUI for this python program.
+ * Making logging system for project.

@@ -16,6 +16,12 @@ import logging
 import serial
 from result_parser import *
 
+# GUI logger
+logging.basicConfig(level=logging.DEBUG)
+
+GUIlogger = logging.getLogger("GUI")
+GUIlogger.setLevel(logging.DEBUG)
+
 def serial_ports():   
     """ Lists serial port names   
        
@@ -427,15 +433,19 @@ class MainWindow(QMainWindow, form_class):
         else:
             self.cbo_routine_level_value.hide()
 
+    # TODO: add automated attribute reader for each command
     def click_read_attribute(self):
+        GUIlogger.debug("btn_insert for read_attribute clicked.")
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             selected = attribute_model.itemData(self.treeView.selectedIndexes()[0])[0]
             if selected not in ["on/off", "color", "level"]:
+                GUI
                 self.add_command("read attribute, " + selected)
 
+    # TODO: add automated attribute reader for each command
     def click_insert(self):
-        print("btn_insert Clicked")
+        GUIlogger.debug("btn_insert for command clicked.")
         module_type = self.cbo_module.currentIndex()
         if module_type == 0:  # Zigbee HA
             command_type = self.tab_single.currentIndex()
@@ -469,6 +479,7 @@ class MainWindow(QMainWindow, form_class):
                     for i in range(onoff_count):
                         item = "on/off, random"
                         self.add_command(item)
+                
             elif command_type == 2:  # color
                 color_input_type = self.cbo_input_color.currentIndex()
                 color_count = self.spinBox_color.value()
@@ -523,7 +534,8 @@ class MainWindow(QMainWindow, form_class):
         # else: #UART
 
     def click_insert_routine(self):
-        print("btn_insert_routine Clicked")
+        GUIlogger.debug("click_insert_routine:btn_insert_routine Clicked")
+        # print("btn_insert_routine Clicked")
         command_model.clear()
         process_model.clear()
         result_model.clear()
@@ -726,7 +738,8 @@ class MainWindow(QMainWindow, form_class):
         # else: #UART
 
     def click_more(self):
-        print("more clicked")
+        GUIlogger.debug("click_more:more clicked")
+        # print("more clicked")
         # if self.worker.isRun:
         #     QMessageBox.about(self, "더보기 실패", "실험이 진행중이라, 결과 저장이 불가능합니다.")
         # elif not log_data:
@@ -743,6 +756,7 @@ class MainWindow(QMainWindow, form_class):
             save_result()
 
     def click_start(self):
+        GUIlogger.debug("click_start:started")
         # 명령 보내기
         name = self.lineEdit_device_name.text()
         uuid = self.lineEdit_device_uuid.text()
@@ -911,6 +925,7 @@ def save_result():
                 result = item[6]
                 write_ws.append([timestamp, task_kind, cluster, command, "", duration, return_val, result])
         write_wb.save('test.xlsx')
+    GUIlogger.debug("save_result: result saved.")
 
 
 if __name__ == "__main__":
